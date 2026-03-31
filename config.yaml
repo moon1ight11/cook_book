@@ -1,0 +1,19 @@
+environment: "development"
+
+server:
+  port: 8080
+  host: "localhost"
+
+database:
+  host: "localhost"
+  port: 27017
+  name: "cook_book"
+
+jwt:
+  secret: "1129qwerty!2911"
+  expiration: "24h"
+
+logger:
+  level: "debug"
+  filepath: "logs/app.log"
+  maxsize: 10

@@ -1,4 +1,4 @@
-package repository
+package repo
 
 import (
     "context"
@@ -6,7 +6,7 @@ import (
     "go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type RecipeRepository interface {
+type RecipeRepositoryInterface interface {
     Create(ctx context.Context, recipe *domain.Recipe) error
     Update(ctx context.Context, recipe *domain.Recipe) error
     Delete(ctx context.Context, id primitive.ObjectID) error

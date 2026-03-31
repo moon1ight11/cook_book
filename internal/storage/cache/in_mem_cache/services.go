@@ -1,7 +1,7 @@
 package inmemcache
 
 import (
-	"cook_book/internal/cache"
+	"cook_book/internal/storage/cache"
 	"cook_book/internal/domain"
 	"time"
 )

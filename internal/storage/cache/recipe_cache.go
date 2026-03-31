@@ -5,7 +5,7 @@ import (
 )
 
 // интерфейс для кэша
-type RecipeCache interface {
+type RecipeCacheInterface interface {
 	Get(id string) (*domain.Recipe, bool)
 	Set(id string, recipe *domain.Recipe)
 	Delete(id string)

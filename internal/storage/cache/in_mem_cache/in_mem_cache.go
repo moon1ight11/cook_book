@@ -1,7 +1,7 @@
 package inmemcache
 
 import (
-	"cook_book/internal/cache"
+	"cook_book/internal/storage/cache"
 	"cook_book/internal/domain"
 	"sync"
 	"time"
@@ -30,7 +30,7 @@ type tagCacheItem struct {
 }
 
 // конструктор кэша
-func NewRecipeCache(ttl, cleanupInterval time.Duration) cache.RecipeCache {
+func NewRecipeCache(ttl, cleanupInterval time.Duration) cache.RecipeCacheInterface {
 	cache := &inMemoryCache{
 		recipes:         make(map[string]*cacheItem),
 		tagRecipes:      make(map[string]*tagCacheItem),
