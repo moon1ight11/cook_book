@@ -115,7 +115,7 @@ func (r *recipeRepo) FindAll(ctx context.Context, filter map[string]interface{},
 		SetSkip(offset).
 		SetSort(bson.M{"created_at": -1})
 
-		// получаем указатель на найденные объекты
+	// получаем указатель на найденные объекты
 	cursor, err := r.collection.Find(ctx, mongoFilter, findOptions)
 	if err != nil {
 		return nil, 0, err

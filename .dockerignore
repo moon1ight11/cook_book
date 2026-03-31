@@ -1,0 +1,14 @@
+logs/
+*.log
+
+config.yaml
+example.config.yaml
+
+docker-compose*.yml
+
+.git
+.gitignore
+.github/
+
+docs/
+README.md

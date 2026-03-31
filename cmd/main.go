@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"cook_book/internal/api"
 	"cook_book/internal/api/handlers/recipehandlers"
 	"cook_book/internal/config"
 	"cook_book/internal/services/recipe"
@@ -11,13 +12,11 @@ import (
 	"cook_book/pkg/logger"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
@@ -41,15 +40,12 @@ func main() {
 		panic(err)
 	}
 
-	// инициализация БД
+	// соединение с БД
 	db, err := storage.NewStorage(cfg)
 	if err != nil {
-		panic(err)
+		logger.Error("Failed to connect DB", "error:", err)
+		os.Exit(1)
 	}
-
-	// контекст с таймаутом
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 
 	// инициализация кэша
 	recipeCache := inmemcache.NewRecipeCache(cfg.Cache.TTL, cfg.Cache.CleanUpInterval)
@@ -59,45 +55,49 @@ func main() {
 	recipeUseCase := recipe.NewRecipeUseCase(recipeRepo, recipeCache)
 	recipeHandler := recipehandlers.NewRecipeHandler(recipeUseCase, logger)
 
-	// Setup Echo
-	e := echo.New()
+	// инициализация роутера
+	router := api.NewRouter(recipeHandler)
 
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowMethods: []string{echo.GET, echo.POST, echo.PUT, echo.DELETE, echo.OPTIONS},
-		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
-	}))
-	e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)))
+	// инициализация роутов
+	router.Init(logger)
 
-	// Health check endpoint
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(200, map[string]string{"status": "healthy"})
-	})
+	// Создаем HTTP сервер
+	srv := &http.Server{
+		Addr:    "0.0.0.0:8080",
+		Handler: router.GetEngine(),
+	}
 
-	// API routes
-	api := e.Group("/api/v1")
-
-	// Recipe routes
-	recipes := api.Group("/recipes")
-	recipes.POST("", recipeHandler.CreateRecipe)
-	recipes.GET("", recipeHandler.ListRecipes)
-	recipes.GET("/search/tags", recipeHandler.SearchByTags)
-	recipes.GET("/:id", recipeHandler.GetRecipe)
-	recipes.PUT("/:id", recipeHandler.UpdateRecipe)
-	recipes.DELETE("/:id", recipeHandler.DeleteRecipe)
-
-	// Stats routes
-	api.GET("/stats", recipeHandler.GetStats)
-
-	// Ожидаем сигналы завершения
+	// создаем каналы для сигналов завершения и ошибки сервера
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	serverError := make(chan error, 1)
 
-	// Graceful shutdown с таймаутом
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// запуск сервера
+	go func() {
+		logger.Info("Server is starting on port :8080")
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error("Failed to run server:", "error", err)
+			serverError <- err
+		}
+	}()
 
-	if err := e.Shutdown(ctx); err != nil {
+	// ждем сигналы
+	select {
+	case <-quit:
+		// если поступил сигнал завершения - делаем шатдаун с таймаутом
+		logger.Info("Shutting down server...")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			logger.Error("Server forced to shutdown:", "error", err)
+		}
+	case err := <-serverError:
+		// еслм пришла ошибка от сервера - фаталим
+		logger.Error("Server error:", "error", err)
 	}
+
+	logger.Info("Server exited")
+
 }
