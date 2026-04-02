@@ -3,12 +3,17 @@ package main
 import (
 	"context"
 	"cook_book/internal/api"
+	"cook_book/internal/api/handlers/authhandlers"
 	"cook_book/internal/api/handlers/recipehandlers"
+	"cook_book/internal/api/handlers/userhandlers"
+	"cook_book/internal/api/jwt"
 	"cook_book/internal/config"
 	"cook_book/internal/services/recipe"
+	"cook_book/internal/services/user"
 	"cook_book/internal/storage"
 	inmemcache "cook_book/internal/storage/cache/in_mem_cache"
 	"cook_book/internal/storage/repo/recipes"
+	"cook_book/internal/storage/repo/users"
 	"cook_book/pkg/logger"
 	"fmt"
 	"log"
@@ -47,19 +52,28 @@ func main() {
 		os.Exit(1)
 	}
 
+	// инициализация jwt
+	jwtService := jwt.NewJWTService(cfg.JWT.AccessSecret, cfg.JWT.RefreshSecret, cfg.JWT.AccessExpiry, cfg.JWT.RefreshExpiry)
+
 	// инициализация кэша
 	recipeCache := inmemcache.NewRecipeCache(cfg.Cache.TTL, cfg.Cache.CleanUpInterval)
 
 	// инициализация зависимостей
 	recipeRepo := recipes.NewRecipeMongoRepo(db, logger)
+	userRepo := users.NewUserMongoRepo(db, logger)
+
 	recipeUseCase := recipe.NewRecipeUseCase(recipeRepo, recipeCache)
+	userUseCase := user.NewRecipeUseCase(userRepo, jwtService)
+
 	recipeHandler := recipehandlers.NewRecipeHandler(recipeUseCase, logger)
+	authHandler := authhandlers.NewAuthHandler(userUseCase, logger)
+	userHandler := userhandlers.NewUserHandler(userUseCase, logger)
 
 	// инициализация роутера
-	router := api.NewRouter(recipeHandler)
+	router := api.NewRouter(recipeHandler, authHandler, userHandler)
 
 	// инициализация роутов
-	router.Init(logger)
+	router.Init(logger, jwtService)
 
 	// Создаем HTTP сервер
 	srv := &http.Server{
@@ -85,19 +99,29 @@ func main() {
 	select {
 	case <-quit:
 		// если поступил сигнал завершения - делаем шатдаун с таймаутом
-		logger.Info("Shutting down server...")
+		logger.Info("Shutting down server")
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
+		// завершаем работу сервера
 		if err := srv.Shutdown(ctx); err != nil {
 			logger.Error("Server forced to shutdown:", "error", err)
+		}
+
+		logger.Info("Disconnecting from database")
+
+		// завершаем работу с БД
+		if err := db.Close(ctx); err != nil {
+			logger.Error("Failed to close database connection:", "error", err)
+		} else {
+			logger.Info("Database connection closed successfully")
 		}
 	case err := <-serverError:
 		// еслм пришла ошибка от сервера - фаталим
 		logger.Error("Server error:", "error", err)
+		os.Exit(1)
 	}
 
 	logger.Info("Server exited")
-
 }

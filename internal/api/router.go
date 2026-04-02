@@ -2,6 +2,8 @@ package api
 
 import (
 	"cook_book/internal/api/handlers"
+	"cook_book/internal/api/jwt"
+	"cook_book/internal/api/middlewares"
 	"cook_book/pkg/logger"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -11,19 +13,27 @@ import (
 // структура роутера
 type Router struct {
 	recipeHandler handlers.RecipeHandlersInterface
+	authHandler   handlers.AuthHandlersInterface
+	userHandler   handlers.UserHandlersInterface
 	engine        *echo.Echo
 }
 
 // конструктор роутера
-func NewRouter(recipehandler handlers.RecipeHandlersInterface) *Router {
+func NewRouter(
+	recipehandler handlers.RecipeHandlersInterface,
+	authHandler handlers.AuthHandlersInterface,
+	userHandler handlers.UserHandlersInterface,
+) *Router {
 	return &Router{
 		recipeHandler: recipehandler,
+		authHandler:   authHandler,
+		userHandler:   userHandler,
 		engine:        echo.New(),
 	}
 }
 
 // инициализация роутов
-func (r *Router) Init(logger logger.Logger) {
+func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	// Middleware для корс
 	r.engine.Use(middleware.CORSWithConfig(
 		middleware.CORSConfig{
@@ -40,23 +50,40 @@ func (r *Router) Init(logger logger.Logger) {
 	})
 
 	// группировка роутов
-	privateGroup := r.engine.Group("/api/v1/private")
+	authGroup := r.engine.Group("/api/v1/auth")
 	publicGroup := r.engine.Group("/api/v1/public")
-	// authGroup := r.engine.Group("/api/v1/auth")
+	privateGroup := r.engine.Group("/api/v1/private")
+	adminGroup := r.engine.Group("/api/v1/admin")
 
-	// создание рецепта
-	privateGroup.POST("/recipes", r.recipeHandler.CreateRecipe)
-	// изменение рецепта
-	privateGroup.PATCH("/recipes", r.recipeHandler.UpdateRecipe)
-	// удаление рецепта
-	privateGroup.DELETE("/recipes", r.recipeHandler.DeleteRecipe)
+	// мидлвары на приватную группу для базовых юзеров
+	privateGroup.Use(middlewares.Auth(jwtService, logger))
+	privateGroup.Use(middlewares.RequireRole("Basic"))
 
-	// просмотр всех рецептов с фильтрами и пагинацией
+	// мидлвары на приватную группу для админов
+	adminGroup.Use(middlewares.Auth(jwtService, logger))
+	adminGroup.Use(middlewares.RequireRole("Admin"))
+
+	// группа хэндлеров аутентификации
+	authGroup.POST("/sign-up", r.authHandler.SignUp)
+	authGroup.POST("/sign-in", r.authHandler.SignIn)
+
+	// группа публичных хэндлеров с рецептами
 	publicGroup.GET("/recipes", r.recipeHandler.ListRecipes)
-	// просмотр одного рецепта
 	publicGroup.GET("/recipes/:recipe_id", r.recipeHandler.GetRecipe)
-	// просмотр рецептов по тегам
-	publicGroup.GET("/recipes", r.recipeHandler.SearchByTags)
+	publicGroup.GET("/recipes-by-tags", r.recipeHandler.SearchByTags)
+	publicGroup.GET("/recipes-by-user", r.recipeHandler.SearchByUser)
+
+	// приватная группа хэндлеров с рецептами
+	privateGroup.POST("/recipes", r.recipeHandler.CreateRecipe)
+	privateGroup.PATCH("/recipes/:recipe_id", r.recipeHandler.UpdateRecipe)
+	privateGroup.DELETE("/recipes/:recipe_id", r.recipeHandler.DeleteRecipe)
+	privateGroup.POST("/sign-out", r.authHandler.SignOut)
+	privateGroup.POST("/token-refresh", r.authHandler.RefreshToken)
+
+	// приватная группа хэндлеров с пользователями
+	privateGroup.GET("/users", r.userHandler.GetUser)
+	privateGroup.PATCH("/users", r.userHandler.UpdateUser)
+	privateGroup.DELETE("/users", r.userHandler.DeleteUser)
 }
 
 func (r *Router) GetEngine() *echo.Echo {

@@ -5,7 +5,7 @@ import "time"
 type Config struct {
 	Environment string       `mapstructure:"environment"`
 	Server      ServerConfig `mapstructure:"server"`
-	Mongo       MongoConfig  `mapstructure:"mongo"`
+	Mongo       MongoConfig  `mapstructure:"database"`
 	JWT         JWTConfig    `mapstructure:"jwt"`
 	Logger      LoggerConfig `mapstructure:"logger"`
 	Cache       CacheConfig  `mapstructure:"cache"`
@@ -17,6 +17,7 @@ type ServerConfig struct {
 }
 
 type MongoConfig struct {
+	User     string `mapstructure:"user"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
 	Name     string `mapstructure:"name"`
@@ -24,8 +25,10 @@ type MongoConfig struct {
 }
 
 type JWTConfig struct {
-	Secret     string        `mapstructure:"secret"`
-	Expiration time.Duration `mapstructure:"expiration"`
+	AccessSecret  string        `mapstructure:"access_secret"`
+	RefreshSecret string        `mapstructure:"refresh_secret"`
+	AccessExpiry  time.Duration `mapstructure:"access_expiry"`
+	RefreshExpiry time.Duration `mapstructure:"refresh_expiry"`
 }
 
 type LoggerConfig struct {

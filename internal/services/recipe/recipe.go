@@ -7,14 +7,14 @@ import (
 
 // структура юзкейсов
 type recipeUseCase struct {
-    repo  repo.RecipeRepositoryInterface
-    cache cache.RecipeCacheInterface
+	repo  repo.RecipeRepositoryInterface
+	cache cache.RecipeCacheInterface
 }
 
 // коструктор
 func NewRecipeUseCase(repo repo.RecipeRepositoryInterface, cache cache.RecipeCacheInterface) *recipeUseCase {
-    return &recipeUseCase{
-        repo:  repo,
-        cache: cache,
-    }
+	return &recipeUseCase{
+		repo:  repo,
+		cache: cache,
+	}
 }

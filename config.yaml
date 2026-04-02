@@ -6,8 +6,10 @@ server:
 
 database:
   host: "localhost"
-  port: 127017
+  port: 27017
   name: "cook_book"
+  user: "admin"
+  password: "123"
 
 jwt:
   secret: "1129qwerty!2911"
@@ -17,3 +19,7 @@ logger:
   level: "debug"
   filepath: "logs/app.log"
   maxsize: 10
+
+cache:
+  ttl: "5m"
+  cleanupinterval: "1m"
