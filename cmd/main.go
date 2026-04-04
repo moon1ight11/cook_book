@@ -12,6 +12,7 @@ import (
 	"cook_book/internal/services/user"
 	"cook_book/internal/storage"
 	inmemcache "cook_book/internal/storage/cache/in_mem_cache"
+	"cook_book/internal/storage/repo"
 	"cook_book/internal/storage/repo/recipes"
 	"cook_book/internal/storage/repo/users"
 	"cook_book/pkg/logger"
@@ -42,32 +43,51 @@ func main() {
 	// инициализация логгера
 	logger, err := logger.NewLogger(cfg.Logger)
 	if err != nil {
-		panic(err)
+		log.Fatal("Failed to init logger: %w", err)
 	}
 
 	// соединение с БД
 	db, err := storage.NewStorage(cfg)
 	if err != nil {
-		logger.Error("Failed to connect DB", "error:", err)
-		os.Exit(1)
+		log.Fatal("Failed to connect DB", "error:", err)
+	}
+
+	err = storage.MigrateAdminUser(db.DB, cfg)
+	if err != nil {
+		log.Fatal("Failed to create migrations", "error:", err)
+	}
+
+	// создание индексов в бд
+	recipesColl := db.DB.Collection("recipes")
+	usersColl := db.DB.Collection("users")
+	indexManager := repo.NewIndexManager(recipesColl, usersColl)
+
+	if err := indexManager.CreateAllIndexes(context.Background()); err != nil {
+		logger.Warn("Warning: failed to create indexes:", "error", err)
 	}
 
 	// инициализация jwt
 	jwtService := jwt.NewJWTService(cfg.JWT.AccessSecret, cfg.JWT.RefreshSecret, cfg.JWT.AccessExpiry, cfg.JWT.RefreshExpiry)
 
 	// инициализация кэша
-	recipeCache := inmemcache.NewRecipeCache(cfg.Cache.TTL, cfg.Cache.CleanUpInterval)
+	recipeCache := inmemcache.NewRecipeCache(cfg.Cache.TTL, cfg.Cache.CleanUpInterval, logger)
+	defer recipeCache.Stop()
 
 	// инициализация зависимостей
 	recipeRepo := recipes.NewRecipeMongoRepo(db, logger)
 	userRepo := users.NewUserMongoRepo(db, logger)
 
 	recipeUseCase := recipe.NewRecipeUseCase(recipeRepo, recipeCache)
-	userUseCase := user.NewRecipeUseCase(userRepo, jwtService)
+	userUseCase := user.NewUserUseCase(userRepo, jwtService)
 
 	recipeHandler := recipehandlers.NewRecipeHandler(recipeUseCase, logger)
-	authHandler := authhandlers.NewAuthHandler(userUseCase, logger)
+	authHandler := authhandlers.NewAuthHandler(userUseCase, logger, jwtService)
 	userHandler := userhandlers.NewUserHandler(userUseCase, logger)
+
+	// инициализируем и запускаем клинер
+	cleanupService := jwt.NewCleanupService(userUseCase, logger)
+	ctx := context.Background()
+	cleanupService.StartCleanup(ctx)
 
 	// инициализация роутера
 	router := api.NewRouter(recipeHandler, authHandler, userHandler)
@@ -117,6 +137,9 @@ func main() {
 		} else {
 			logger.Info("Database connection closed successfully")
 		}
+
+		// останавливаем очиститель токенов
+		cleanupService.Stop()
 	case err := <-serverError:
 		// еслм пришла ошибка от сервера - фаталим
 		logger.Error("Server error:", "error", err)

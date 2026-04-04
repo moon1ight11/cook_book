@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"regexp"
 	"time"
 )
 
@@ -15,6 +16,8 @@ import (
 func (r *recipeRepo) Create(ctx context.Context, recipe *domain.Recipe) error {
 	// устанавливаем метку создания
 	recipe.CreatedAt = time.Now()
+	id := primitive.NewObjectID()
+	recipe.Id = id
 
 	// получаем результат из бд
 	result, err := r.collection.InsertOne(ctx, recipe)
@@ -35,7 +38,7 @@ func (r *recipeRepo) FindByID(ctx context.Context, id primitive.ObjectID) (*doma
 	err := r.collection.FindOne(ctx, filter).Decode(&recipe)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, domain.ErrRecipeNotFound
+			return nil, fmt.Errorf("error in recipeFindById: recipe not found")
 		}
 		return nil, fmt.Errorf("error in recipeFindById: %w", err)
 	}
@@ -50,17 +53,12 @@ func (r *recipeRepo) FindAll(ctx context.Context, filter map[string]interface{},
 
 	// фильтр по названию
 	if title, ok := filter["title"]; ok {
-		mongoFilter["title"] = bson.M{"$regex": title, "$options": "i"}
+		mongoFilter["title"] = bson.M{"$regex": regexp.QuoteMeta(title.(string)), "$options": "i"}
 	}
 
 	// фильтр по сложности
 	if difficulty, ok := filter["difficulty"]; ok {
-		mongoFilter["difficulty"] = difficulty
-	}
-
-	// фильтр по тегам
-	if tags, ok := filter["tags"]; ok {
-		mongoFilter["tags"] = bson.M{"$in": tags}
+		mongoFilter["difficulty"] = bson.M{"$regex": regexp.QuoteMeta(difficulty.(string)), "$options": "i"}
 	}
 
 	// получаем количество найденных рецептов
@@ -115,7 +113,7 @@ func (r *recipeRepo) FindByTags(ctx context.Context, tags []string) ([]*domain.R
 // получение всех рецептов конкретного пользователя
 func (r *recipeRepo) FindByUser(ctx context.Context, userId primitive.ObjectID) ([]*domain.Recipe, error) {
 	// выбираем фильтр
-	filter := bson.M{"owner_id": bson.M{"$in": userId}}
+	filter := bson.M{"owner_id": userId}
 
 	// получаем указатель на рецепты
 	cursor, err := r.collection.Find(ctx, filter)
@@ -163,10 +161,10 @@ func (r *recipeRepo) Update(
 		update["steps"] = *steps
 	}
 	if prepTime != nil {
-		update["preptime"] = *prepTime
+		update["prep_time"] = *prepTime
 	}
 	if cooktime != nil {
-		update["cooktime"] = *cooktime
+		update["cook_time"] = *cooktime
 	}
 	if servings != nil {
 		update["servings"] = *servings
@@ -182,7 +180,7 @@ func (r *recipeRepo) Update(
 		return fmt.Errorf("error in recipeUpdate: %s", "nothing to update")
 	}
 
-	update["updatedat"] = time.Now()
+	update["updated_at"] = time.Now()
 
 	filter := bson.M{
 		"_id":      id,
@@ -219,7 +217,7 @@ func (r *recipeRepo) Delete(ctx context.Context, id primitive.ObjectID, userId p
 
 	// если ничего не удалилось - ошибка
 	if result.DeletedCount == 0 {
-		return domain.ErrRecipeNotFound
+		return fmt.Errorf("errir in recipeDelete: recipe not found")
 	}
 
 	return nil

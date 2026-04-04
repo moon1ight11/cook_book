@@ -35,5 +35,6 @@ func setDefaults() {
 
 	viper.SetDefault("database.port", 27017)
 
-	viper.SetDefault("jwt.expiration", "24h")
+	viper.SetDefault("jwt.access_expiry", "15m")
+	viper.SetDefault("jwt.refresh_expiry", "24h")
 }

@@ -71,7 +71,7 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	publicGroup.GET("/recipes", r.recipeHandler.ListRecipes)
 	publicGroup.GET("/recipes/:recipe_id", r.recipeHandler.GetRecipe)
 	publicGroup.GET("/recipes-by-tags", r.recipeHandler.SearchByTags)
-	publicGroup.GET("/recipes-by-user", r.recipeHandler.SearchByUser)
+	publicGroup.GET("/recipes-by-user/:user_id", r.recipeHandler.SearchByUser)
 
 	// приватная группа хэндлеров с рецептами
 	privateGroup.POST("/recipes", r.recipeHandler.CreateRecipe)
@@ -84,6 +84,12 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	privateGroup.GET("/users", r.userHandler.GetUser)
 	privateGroup.PATCH("/users", r.userHandler.UpdateUser)
 	privateGroup.DELETE("/users", r.userHandler.DeleteUser)
+
+	// админская группа
+	adminGroup.POST("/users", r.userHandler.CreateAdmin)
+	adminGroup.PATCH("/users/:user_id", r.userHandler.UpdateUserRole)
+	adminGroup.DELETE("/users/:user_id", r.userHandler.DeleteAnyUser)
+	adminGroup.DELETE("/recipe/:recipe_id", r.recipeHandler.DeleteAnyRecipe)
 }
 
 func (r *Router) GetEngine() *echo.Echo {

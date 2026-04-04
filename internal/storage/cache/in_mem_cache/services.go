@@ -1,7 +1,6 @@
 package inmemcache
 
 import (
-	"cook_book/internal/storage/cache"
 	"cook_book/internal/domain"
 	"time"
 )
@@ -15,8 +14,10 @@ func (c *inMemoryCache) Get(id string) (*domain.Recipe, bool) {
 	// получаем рецепт
 	item, exists := c.recipes[id]
 	if !exists {
+		c.logger.Info("cache miss", "id", id)
 		return nil, false
 	}
+	c.logger.Info("cache hit", "id", id)
 
 	// если запись просрочена - не возвращаем ничего
 	if time.Now().After(item.expiresAt) {
@@ -65,8 +66,10 @@ func (c *inMemoryCache) GetByTags(tagsKey string) ([]*domain.Recipe, bool) {
 	// получаем записи
 	item, exists := c.tagRecipes[tagsKey]
 	if !exists {
+		c.logger.Info("cache by tags miss", "tags", tagsKey)
 		return nil, false
 	}
+	c.logger.Info("cache by tags hit", "tags", tagsKey)
 
 	// если просрочено - прокидываем
 	if time.Now().After(item.expiresAt) {
@@ -86,19 +89,6 @@ func (c *inMemoryCache) SetByTags(tagsKey string, recipes []*domain.Recipe) {
 	c.tagRecipes[tagsKey] = &tagCacheItem{
 		recipes:   recipes,
 		expiresAt: time.Now().Add(c.ttl),
-	}
-}
-
-// получение статистики
-func (c *inMemoryCache) GetStats() cache.CacheStats {
-	// блокируем чтение
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
-	// возвращаем статистику
-	return cache.CacheStats{
-		TotalItems:   len(c.recipes),
-		TotalTagSets: len(c.tagRecipes),
 	}
 }
 
@@ -141,5 +131,6 @@ func (c *inMemoryCache) cleanupExpired() {
 
 // остановка очистки кэша
 func (c *inMemoryCache) Stop() {
-	c.stopCleanup <- true
+	close(c.stopCleanup)
+	c.wg.Wait()
 }

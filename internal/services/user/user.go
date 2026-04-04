@@ -12,7 +12,7 @@ type userUseCase struct {
 }
 
 // коструктор
-func NewRecipeUseCase(repo repo.UserRepositoryInterface, jwt jwt.JWTInterface) *userUseCase {
+func NewUserUseCase(repo repo.UserRepositoryInterface, jwt jwt.JWTInterface) *userUseCase {
 	return &userUseCase{
 		repo:       repo,
 		jwtService: jwt,

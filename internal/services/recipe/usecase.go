@@ -4,9 +4,9 @@ import (
 	"context"
 	"cook_book/internal/domain"
 	"fmt"
-	"strings"
-
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"sort"
+	"strings"
 )
 
 // создание рецепта
@@ -92,12 +92,12 @@ func (uc *recipeUseCase) DeleteRecipe(ctx context.Context, id string, userId str
 	// получаем id рецепта
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return domain.NewRecipeError("invalid recipe ID")
+		return fmt.Errorf("error in DeleteRecipe: %w", err)
 	}
 
 	objectUserId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return domain.NewRecipeError("invalid recipe ID")
+		return fmt.Errorf("error in DeleteRecipe: %w", err)
 	}
 
 	// удаляем из бд
@@ -122,7 +122,7 @@ func (uc *recipeUseCase) GetRecipeByID(ctx context.Context, id string) (*domain.
 	// в кэше не нашли - переводим формат id
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, domain.NewRecipeError("invalid recipe ID")
+		return nil, fmt.Errorf("error in GetRecipeByID: %w", err)
 	}
 
 	// ищем в бд
@@ -142,7 +142,7 @@ func (uc *recipeUseCase) GetRecipeByUser(ctx context.Context, userId string) ([]
 	//переводим формат id
 	objectID, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return nil, domain.NewRecipeError("invalid user ID")
+		return nil, fmt.Errorf("error in GetRecipeByUser: %w", err)
 	}
 
 	// ищем в бд
@@ -181,7 +181,7 @@ func (uc *recipeUseCase) ListRecipes(ctx context.Context, filters map[string]int
 func (uc *recipeUseCase) SearchByTags(ctx context.Context, tags []string) ([]*domain.Recipe, error) {
 	// проверяем, чтобы теги были
 	if len(tags) == 0 {
-		return []*domain.Recipe{}, nil
+		return []*domain.Recipe{}, fmt.Errorf("error in SearchByTags: no tags")
 	}
 
 	// преводим теги в нижний регистр
@@ -189,8 +189,10 @@ func (uc *recipeUseCase) SearchByTags(ctx context.Context, tags []string) ([]*do
 		tags[i] = strings.ToLower(strings.TrimSpace(tag))
 	}
 
-	// соединяем теги в строку
-	cacheKey := strings.Join(tags, ",")
+	sortedTags := make([]string, len(tags))
+	copy(sortedTags, tags)
+	sort.Strings(sortedTags)
+	cacheKey := strings.Join(sortedTags, ",")
 
 	// ищем в кэше
 	if cached, found := uc.cache.GetByTags(cacheKey); found {

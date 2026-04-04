@@ -1,8 +1,9 @@
 package domain
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"fmt"
 	"time"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // структура самого рецепта
@@ -32,47 +33,22 @@ type Ingredient struct {
 // валидация рецепта
 func (r *Recipe) RecipeValidate() error {
 	if r.Title == "" {
-		return ErrEmptyTitle
+		return fmt.Errorf("error in RecipeValidate: empty title")
 	}
 	if len(r.Ingredients) == 0 {
-		return ErrNoIngredients
+		return fmt.Errorf("error in RecipeValidate: no ingredients")
 	}
 	if len(r.Steps) == 0 {
-		return ErrNoSteps
+		return fmt.Errorf("error in RecipeValidate: no steps")
 	}
 	if r.PrepTime < 0 {
-		return ErrInvalidPrepTime
+		return fmt.Errorf("error in RecipeValidate: prep time must be positive")
 	}
 	if r.CookTime < 0 {
-		return ErrInvalidCookTime
+		return fmt.Errorf("error in RecipeValidate: cook time must be positive")
 	}
 	if r.Servings <= 0 {
-		return ErrInvalidServings
+		return fmt.Errorf("error in RecipeValidate: num of servings must be positive")
 	}
 	return nil
-}
-
-// ошибки рецептов
-var (
-	ErrEmptyTitle      = NewRecipeError("recipe title is required")
-	ErrNoIngredients   = NewRecipeError("recipe must have at least one ingredient")
-	ErrNoSteps         = NewRecipeError("recipe must have at least one step")
-	ErrRecipeNotFound  = NewRecipeError("recipe not found")
-	ErrInvalidPrepTime = NewRecipeError("prep time cannot be negative")
-	ErrInvalidCookTime = NewRecipeError("cook time cannot be negative")
-	ErrInvalidServings = NewRecipeError("servings must be greater than 0")
-)
-
-// структура ошибки рецептов
-type RecipeError struct {
-	Message string
-}
-
-func (e *RecipeError) Error() string {
-	return e.Message
-}
-
-// конструктор ошибки рецептов
-func NewRecipeError(msg string) *RecipeError {
-	return &RecipeError{Message: msg}
 }

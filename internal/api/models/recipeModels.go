@@ -2,6 +2,7 @@ package models
 
 import (
 	"cook_book/internal/domain"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -22,16 +23,16 @@ type CreateRecipeRequest struct {
 // валидация созданного рецепта для апи
 func (r *CreateRecipeRequest) Validate() error {
 	if strings.TrimSpace(r.Title) == "" {
-		return domain.ErrEmptyTitle
+		return fmt.Errorf("error in ModelsRecipeValidate: empty title")
 	}
 	if len(r.Ingredients) == 0 {
-		return domain.ErrNoIngredients
+		return fmt.Errorf("error in ModelsRecipeValidate: no ingredients")
 	}
 	if len(r.Steps) == 0 {
-		return domain.ErrNoSteps
+		return fmt.Errorf("error in ModelsRecipeValidate: no steps")
 	}
 	if r.Servings <= 0 {
-		return domain.ErrInvalidServings
+		return fmt.Errorf("error in ModelsRecipeValidate: no servings")
 	}
 	return nil
 }

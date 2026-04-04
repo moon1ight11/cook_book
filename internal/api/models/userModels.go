@@ -29,3 +29,12 @@ type UpdateUserRequest struct {
 	Email    *string `json:"email"`
 	Password *string `json:"password"`
 }
+
+// модель для запроса на рефрештокен
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type RefreshTokenResponse struct {
+	RefreshToken string `json:"refresh_token"`
+}

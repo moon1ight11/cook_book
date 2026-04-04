@@ -34,6 +34,9 @@ type UserRepositoryInterface interface {
 	FindByID(ctx context.Context, id primitive.ObjectID) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	Update(ctx context.Context, id primitive.ObjectID, name *string, email *string, pass *string) error
+	UpdateRole(ctx context.Context, newRole string, id primitive.ObjectID) error
 	UpdateRefreshToken(ctx context.Context, id primitive.ObjectID, refreshToken string) error
 	Delete(ctx context.Context, id primitive.ObjectID) error
+	DeleteAny(ctx context.Context, id primitive.ObjectID) error
+	CleanExpiredRefreshTokens(ctx context.Context) error
 }

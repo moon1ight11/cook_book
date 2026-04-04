@@ -8,6 +8,7 @@ type RecipeHandlersInterface interface {
 	GetRecipe(c echo.Context) error
 	SearchByUser(c echo.Context) error
 	DeleteRecipe(c echo.Context) error
+	DeleteAnyRecipe(c echo.Context) error
 	ListRecipes(c echo.Context) error
 	SearchByTags(c echo.Context) error
 }
@@ -20,7 +21,10 @@ type AuthHandlersInterface interface {
 }
 
 type UserHandlersInterface interface {
+	CreateAdmin(c echo.Context) error
 	GetUser(c echo.Context) error
 	UpdateUser(c echo.Context) error
+	UpdateUserRole(c echo.Context) error
 	DeleteUser(c echo.Context) error
+	DeleteAnyUser(c echo.Context) error
 }

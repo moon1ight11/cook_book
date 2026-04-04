@@ -15,7 +15,7 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 	var req models.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
 		a.logger.Error("Error in SignUp:", "error", err)
-		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
+		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
 
 	// создаем контекст с таймаутом
@@ -40,7 +40,7 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 	})
 	if err != nil {
 		a.logger.Error("Error in SignUp:", "error", err)
-		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: err.Error()})
+		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
 
 	// сразу делаем логин
@@ -50,7 +50,7 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 	})
 	if err != nil {
 		a.logger.Error("Error in SignUp:", "error", err)
-		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: err.Error()})
+		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
 
 	// устанавливаем аксес токен в куку
@@ -58,7 +58,9 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 
 	a.logger.Info("User signed up successful", "email", req.Email)
 
-	return c.JSON(http.StatusCreated, models.SuccessResponse{Message: "sign up successful"})
+	return c.JSON(http.StatusOK, models.RefreshTokenResponse{
+		RefreshToken: response.RefreshToken,
+	})
 }
 
 // логин
@@ -67,7 +69,7 @@ func (a *AuthHandler) SignIn(c echo.Context) error {
 	var req models.LoginRequest
 	if err := c.Bind(&req); err != nil {
 		a.logger.Error("Error in SignIn:", "error", err)
-		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: err.Error()})
+		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
 
 	// создаем контекст с таймаутом
@@ -81,7 +83,7 @@ func (a *AuthHandler) SignIn(c echo.Context) error {
 	})
 	if err != nil {
 		a.logger.Error("Error in SignIn:", "error", err)
-		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: err.Error()})
+		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
 
 	// устанавливаем аксес токен в куку
@@ -89,35 +91,39 @@ func (a *AuthHandler) SignIn(c echo.Context) error {
 
 	a.logger.Info("User signed in successful", "email", req.Email)
 
-	return c.JSON(http.StatusOK, models.SuccessResponse{Message: "sign in successful"})
+	return c.JSON(http.StatusOK, models.RefreshTokenResponse{
+		RefreshToken: response.RefreshToken,
+	})
 }
 
 // обновление токенов
 func (a *AuthHandler) RefreshToken(c echo.Context) error {
-	// получаем user_id из контекста
-	userID, ok := c.Get("user_id").(string)
-	if !ok {
-		a.logger.Error("Error in RefreshToken:", "error", "unauthorized")
-		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
+	// получаем рефреш токен с фронта
+	var req models.RefreshTokenRequest
+	if err := c.Bind(&req); err != nil {
+		a.logger.Error("Error in RefreshToken:", "error", err)
+		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
 
 	// создаем контекст с таймаутом
 	ctx, cancel := context.WithTimeout(c.Request().Context(), time.Second*5)
 	defer cancel()
 
-	// обновляем токены
-	response, err := a.useCase.RefreshTokens(ctx, userID)
+	// передаем токен в сервисы
+	response, err := a.useCase.RefreshTokens(ctx, req.RefreshToken)
 	if err != nil {
 		a.logger.Error("Error in RefreshToken:", "error", err)
-		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: err.Error()})
+		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
 
 	// устанавливаем новый аксес токен в куку
 	a.setAccessTokenCookie(c, response.AccessToken)
 
-	a.logger.Info("User refresh tokens successful", "user_id", userID)
+	a.logger.Info("User refresh tokens successful", "user_id", response.User.Id.Hex())
 
-	return c.JSON(http.StatusCreated, models.SuccessResponse{Message: "tokens refreshed successful"})
+	return c.JSON(http.StatusOK, models.RefreshTokenResponse{
+		RefreshToken: response.RefreshToken,
+	})
 }
 
 func (a *AuthHandler) SignOut(c echo.Context) error {
@@ -125,6 +131,7 @@ func (a *AuthHandler) SignOut(c echo.Context) error {
 	userID, ok := c.Get("user_id").(string)
 	if !ok {
 		a.logger.Error("Error in SignOut:", "error", "unauthoried")
+		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
 
 	// создаем контекст с таймаутом
@@ -135,6 +142,7 @@ func (a *AuthHandler) SignOut(c echo.Context) error {
 	err := a.useCase.SignOut(ctx, userID)
 	if err != nil {
 		a.logger.Error("Error in SignOut:", "error", err)
+		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
 
 	// очищаем куки

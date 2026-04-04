@@ -12,7 +12,7 @@ type RecipeCacheInterface interface {
 	Clear()
 	GetByTags(tagsKey string) ([]*domain.Recipe, bool)
 	SetByTags(tagsKey string, recipes []*domain.Recipe)
-	GetStats() CacheStats
+	Stop()
 }
 
 // статистика кэша
