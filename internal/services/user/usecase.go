@@ -71,8 +71,14 @@ func (u *userUseCase) Login(ctx context.Context, req *domain.LoginRequest) (*mod
 		return nil, fmt.Errorf("error in Login: %w", err)
 	}
 
+	// хэштруем токен
+	hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokens.RefreshToken), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("error in Login: %w", err)
+	}
+
 	// закидываем рефрештокен в бд
-	err = u.repo.UpdateRefreshToken(ctx, user.Id, tokens.RefreshToken)
+	err = u.repo.UpdateRefreshToken(ctx, user.Id, string(hashedToken))
 	if err != nil {
 		return nil, fmt.Errorf("error in Login: %w", err)
 	}
@@ -105,8 +111,9 @@ func (u *userUseCase) RefreshTokens(ctx context.Context, refreshToken string) (*
 	}
 
 	// проверяем что рефреш в бд совпадает с переданным
-	if user.RefreshToken != refreshToken {
-		return nil, fmt.Errorf("error in RefreshTokens: refresh token mismatch")
+	err = bcrypt.CompareHashAndPassword([]byte(user.RefreshToken), []byte(refreshToken))
+	if err != nil {
+		return nil, fmt.Errorf("error in RefreshTokens: %w", err)
 	}
 
 	// инвалидируем старый токен
@@ -125,8 +132,14 @@ func (u *userUseCase) RefreshTokens(ctx context.Context, refreshToken string) (*
 		return nil, fmt.Errorf("error in RefreshTokens: %w", err)
 	}
 
+	// хэшируем токен
+	hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokens.RefreshToken), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("error in RefreshTokens: %w", err)
+	}
+
 	// обновляем рефрештокен в бд
-	err = u.repo.UpdateRefreshToken(ctx, user.Id, tokens.RefreshToken)
+	err = u.repo.UpdateRefreshToken(ctx, user.Id, string(hashedToken))
 	if err != nil {
 		return nil, fmt.Errorf("error in RefreshTokens: %w", err)
 	}
@@ -234,7 +247,13 @@ func (u *userUseCase) UpdateUser(
 			return fmt.Errorf("error in UpdateUser: %w", err)
 		}
 
-		err = u.repo.UpdateRefreshToken(ctx, user.Id, tokens.RefreshToken)
+		// хэшируем токен
+		hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokens.RefreshToken), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("error in UpdateUser: %w", err)
+		}
+
+		err = u.repo.UpdateRefreshToken(ctx, user.Id, string(hashedToken))
 		if err != nil {
 			return fmt.Errorf("error in UpdateUser: %w", err)
 		}
@@ -316,9 +335,9 @@ func (u *userUseCase) SignOut(ctx context.Context, userID string) error {
 
 // очистка просроченных токенов
 func (u *userUseCase) CleanExpiredTokens(ctx context.Context) error {
-    err := u.repo.CleanExpiredRefreshTokens(ctx)
-    if err != nil {
-        return fmt.Errorf("error in CleanExpiredTokens: %w", err)
-    }
-    return nil
+	err := u.repo.CleanExpiredRefreshTokens(ctx)
+	if err != nil {
+		return fmt.Errorf("error in CleanExpiredTokens: %w", err)
+	}
+	return nil
 }

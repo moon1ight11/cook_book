@@ -57,7 +57,7 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 
 	// мидлвары на приватную группу для базовых юзеров
 	privateGroup.Use(middlewares.Auth(jwtService, logger))
-	privateGroup.Use(middlewares.RequireRole("Basic"))
+	privateGroup.Use(middlewares.RequireRole("Basic", "Admin"))
 
 	// мидлвары на приватную группу для админов
 	adminGroup.Use(middlewares.Auth(jwtService, logger))
@@ -66,6 +66,7 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	// группа хэндлеров аутентификации
 	authGroup.POST("/sign-up", r.authHandler.SignUp)
 	authGroup.POST("/sign-in", r.authHandler.SignIn)
+	authGroup.POST("/token-refresh", r.authHandler.RefreshToken) 
 
 	// группа публичных хэндлеров с рецептами
 	publicGroup.GET("/recipes", r.recipeHandler.ListRecipes)
@@ -78,7 +79,6 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	privateGroup.PATCH("/recipes/:recipe_id", r.recipeHandler.UpdateRecipe)
 	privateGroup.DELETE("/recipes/:recipe_id", r.recipeHandler.DeleteRecipe)
 	privateGroup.POST("/sign-out", r.authHandler.SignOut)
-	privateGroup.POST("/token-refresh", r.authHandler.RefreshToken)
 
 	// приватная группа хэндлеров с пользователями
 	privateGroup.GET("/users", r.userHandler.GetUser)

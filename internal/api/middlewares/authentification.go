@@ -36,7 +36,7 @@ func Auth(jwtService jwt.JWTInterface, logger logger.Logger) echo.MiddlewareFunc
 }
 
 // role-check мидлвар
-func RequireRole(role string) echo.MiddlewareFunc {
+func RequireRole(roles ...string) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			// получаем роль из контекста
@@ -46,9 +46,11 @@ func RequireRole(role string) echo.MiddlewareFunc {
 			}
 
 			// сравниваем с разрешенной
-			if userRole == role {
-				return next(c)
-			}
+			for _, role := range roles {
+                if userRole == role {
+                    return next(c)
+                }
+            }
 
 			return echo.NewHTTPError(http.StatusForbidden, "access violation")
 		}
