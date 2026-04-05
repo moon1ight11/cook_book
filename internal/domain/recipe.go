@@ -2,8 +2,8 @@ package domain
 
 import (
 	"fmt"
-	"time"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 // структура самого рецепта
@@ -49,6 +49,9 @@ func (r *Recipe) RecipeValidate() error {
 	}
 	if r.Servings <= 0 {
 		return fmt.Errorf("error in RecipeValidate: num of servings must be positive")
+	}
+	if r.Difficulty != "easy" && r.Difficulty != "medium" && r.Difficulty != "hard" {
+		return fmt.Errorf("error in RecipeValidate: wrong difficulty")
 	}
 	return nil
 }

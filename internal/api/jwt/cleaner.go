@@ -12,7 +12,7 @@ type CleanupService struct {
 	userUseCase services.UserUseCaseInterface
 	logger      logger.Logger
 	wg          sync.WaitGroup
-    stopCh      chan struct{}
+	cancelFunc  context.CancelFunc
 }
 
 func NewCleanupService(userUseCase services.UserUseCaseInterface, logger logger.Logger) *CleanupService {
@@ -24,11 +24,15 @@ func NewCleanupService(userUseCase services.UserUseCaseInterface, logger logger.
 
 // горутина с очистителем
 func (s *CleanupService) StartCleanup(ctx context.Context) {
+	ctx, cancel := context.WithCancel(ctx)
+	s.cancelFunc = cancel
+
 	// задаем интервал - каждые сутки
 	ticker := time.NewTicker(24 * time.Hour)
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
+		defer ticker.Stop()
 		for {
 			select {
 			// когда срабатывает тикер - удаляем
@@ -36,7 +40,6 @@ func (s *CleanupService) StartCleanup(ctx context.Context) {
 				s.cleanExpiredTokens(ctx)
 			// когда сворачивается контекст - останавливаем таймер и завершаем клинер
 			case <-ctx.Done():
-				ticker.Stop()
 				s.logger.Info("Cleanup scheduler stopped")
 				return
 			}
@@ -61,6 +64,9 @@ func (s *CleanupService) cleanExpiredTokens(ctx context.Context) {
 
 // грейсфул остановка очистителя
 func (s *CleanupService) Stop() {
-    close(s.stopCh)
-    s.wg.Wait()
+	if s.cancelFunc != nil {
+		s.cancelFunc()
+	}
+	s.wg.Wait()
+	s.logger.Info("Cleanup service stopped gracefully")
 }

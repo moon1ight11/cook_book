@@ -78,12 +78,12 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	privateGroup.POST("/recipes", r.recipeHandler.CreateRecipe)
 	privateGroup.PATCH("/recipes/:recipe_id", r.recipeHandler.UpdateRecipe)
 	privateGroup.DELETE("/recipes/:recipe_id", r.recipeHandler.DeleteRecipe)
-	privateGroup.POST("/sign-out", r.authHandler.SignOut)
 
 	// приватная группа хэндлеров с пользователями
 	privateGroup.GET("/users", r.userHandler.GetUser)
 	privateGroup.PATCH("/users", r.userHandler.UpdateUser)
 	privateGroup.DELETE("/users", r.userHandler.DeleteUser)
+	privateGroup.POST("/sign-out", r.authHandler.SignOut)
 
 	// админская группа
 	adminGroup.POST("/users", r.userHandler.CreateAdmin)

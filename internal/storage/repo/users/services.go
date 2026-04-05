@@ -68,7 +68,7 @@ func (u *userRepo) Update(
 		update["email"] = *email
 	}
 	if pass != nil {
-		update["hashpass"] = *pass
+		update["password"] = *pass
 	}
 
 	if len(update) == 0 {

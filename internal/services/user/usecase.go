@@ -4,11 +4,15 @@ import (
 	"context"
 	"cook_book/internal/api/models"
 	"cook_book/internal/domain"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"golang.org/x/crypto/bcrypt"
 	"regexp"
 	"strings"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // создание пользователя
@@ -17,6 +21,16 @@ func (u *userUseCase) CreateUser(ctx context.Context, req *domain.CreateUserRequ
 	existingUser, _ := u.repo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
 		return nil, fmt.Errorf("error in CreateUser: user with email %s already exist", req.Email)
+	}
+
+	// проверяем имейл на правильность
+	pattern := `^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`
+	matched, err := regexp.MatchString(pattern, req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("error in UpdateUser: %w", err)
+	}
+	if !matched {
+		return nil, fmt.Errorf("error in UpdateUser: new email not looks like email")
 	}
 
 	// хэшируем пароль
@@ -72,13 +86,11 @@ func (u *userUseCase) Login(ctx context.Context, req *domain.LoginRequest) (*mod
 	}
 
 	// хэштруем токен
-	hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokens.RefreshToken), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("error in Login: %w", err)
-	}
+	hash := sha256.Sum256([]byte(tokens.RefreshToken))
+	hashedToken := hex.EncodeToString(hash[:])
 
 	// закидываем рефрештокен в бд
-	err = u.repo.UpdateRefreshToken(ctx, user.Id, string(hashedToken))
+	err = u.repo.UpdateRefreshToken(ctx, user.Id, hashedToken)
 	if err != nil {
 		return nil, fmt.Errorf("error in Login: %w", err)
 	}
@@ -111,9 +123,11 @@ func (u *userUseCase) RefreshTokens(ctx context.Context, refreshToken string) (*
 	}
 
 	// проверяем что рефреш в бд совпадает с переданным
-	err = bcrypt.CompareHashAndPassword([]byte(user.RefreshToken), []byte(refreshToken))
-	if err != nil {
-		return nil, fmt.Errorf("error in RefreshTokens: %w", err)
+	hash := sha256.Sum256([]byte(refreshToken))
+	requestHash := hex.EncodeToString(hash[:])
+
+	if subtle.ConstantTimeCompare([]byte(user.RefreshToken), []byte(requestHash)) != 1 {
+		return nil, fmt.Errorf("error in RefreshTokens: invalid token")
 	}
 
 	// инвалидируем старый токен
@@ -133,13 +147,11 @@ func (u *userUseCase) RefreshTokens(ctx context.Context, refreshToken string) (*
 	}
 
 	// хэшируем токен
-	hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokens.RefreshToken), bcrypt.DefaultCost)
-	if err != nil {
-		return nil, fmt.Errorf("error in RefreshTokens: %w", err)
-	}
+	hash = sha256.Sum256([]byte(tokens.RefreshToken))
+	hashedToken := hex.EncodeToString(hash[:])
 
 	// обновляем рефрештокен в бд
-	err = u.repo.UpdateRefreshToken(ctx, user.Id, string(hashedToken))
+	err = u.repo.UpdateRefreshToken(ctx, user.Id, hashedToken)
 	if err != nil {
 		return nil, fmt.Errorf("error in RefreshTokens: %w", err)
 	}
@@ -228,6 +240,7 @@ func (u *userUseCase) UpdateUser(
 		}
 		hashedPass = string(hashedBytes)
 		hashedPassPtr = &hashedPass
+		fmt.Println(hashedPassPtr)
 		needsNewTokens = true
 	}
 
@@ -248,12 +261,10 @@ func (u *userUseCase) UpdateUser(
 		}
 
 		// хэшируем токен
-		hashedToken, err := bcrypt.GenerateFromPassword([]byte(tokens.RefreshToken), bcrypt.DefaultCost)
-		if err != nil {
-			return fmt.Errorf("error in UpdateUser: %w", err)
-		}
+		hash := sha256.Sum256([]byte(tokens.RefreshToken))
+		hashedToken := hex.EncodeToString(hash[:])
 
-		err = u.repo.UpdateRefreshToken(ctx, user.Id, string(hashedToken))
+		err = u.repo.UpdateRefreshToken(ctx, user.Id, hashedToken)
 		if err != nil {
 			return fmt.Errorf("error in UpdateUser: %w", err)
 		}

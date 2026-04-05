@@ -51,7 +51,7 @@ func MigrateAdminUser(db *mongo.Database, cfg *config.Config) error {
 	usersCollection := db.Collection("users")
 
 	// выбираем записи с ролью админ
-	count, err := usersCollection.CountDocuments(ctx, bson.M{"role": "admin"})
+	count, err := usersCollection.CountDocuments(ctx, bson.M{"role": "Admin"})
 	if err != nil {
 		return fmt.Errorf("error in MigrateAdmin: %w", err)
 	}
