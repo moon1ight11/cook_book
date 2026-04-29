@@ -2,8 +2,9 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
+
+	"github.com/spf13/viper"
 )
 
 // загрузка конфигурации
@@ -29,12 +30,4 @@ func Load() (*Config, error) {
 // дефолтные значения полей конфигурации
 func setDefaults() {
 	viper.SetDefault("environment", "development")
-
-	viper.SetDefault("server.port", 8080)
-	viper.SetDefault("server.host", "localhost")
-
-	viper.SetDefault("database.port", 27017)
-
-	viper.SetDefault("jwt.access_expiry", "15m")
-	viper.SetDefault("jwt.refresh_expiry", "24h")
 }

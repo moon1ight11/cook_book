@@ -46,19 +46,24 @@ func NewStorage(cfg *config.Config) (*DataBase, error) {
 
 // типа миграция для создания нулевого админа
 func MigrateAdminUser(db *mongo.Database, cfg *config.Config) error {
-	// создаем базовый контекст и выбираем коллекцию
-	ctx := context.Background()
+	// создаем контекст и выбираем коллекцию
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
 	usersCollection := db.Collection("users")
 
 	// выбираем записи с ролью админ
 	count, err := usersCollection.CountDocuments(ctx, bson.M{"role": "Admin"})
 	if err != nil {
-		return fmt.Errorf("error in MigrateAdmin: %w", err)
+		return fmt.Errorf("error in MigrateAdminUser: %w", err)
 	}
 
 	// если админа нет — создаём
 	if count == 0 {
-		hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(cfg.Admin.Password), bcrypt.DefaultCost)
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cfg.Admin.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("error in MigrateAdminUser: %w", err)
+		}
 
 		admin := domain.User{
 			Name:      cfg.Admin.Name,
@@ -68,9 +73,9 @@ func MigrateAdminUser(db *mongo.Database, cfg *config.Config) error {
 			CreatedAt: time.Now(),
 		}
 
-		_, err := usersCollection.InsertOne(ctx, admin)
+		_, err = usersCollection.InsertOne(ctx, admin)
 		if err != nil {
-			return fmt.Errorf("error in MigrateAdmin: %w", err)
+			return fmt.Errorf("error in MigrateAdminUser: %w", err)
 		}
 	}
 

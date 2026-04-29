@@ -58,7 +58,7 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 
 	a.logger.Info("User signed up successful", "email", req.Email)
 
-	return c.JSON(http.StatusOK, models.RefreshTokenResponse{
+	return c.JSON(http.StatusCreated, models.RefreshTokenResponse{
 		RefreshToken: response.RefreshToken,
 	})
 }

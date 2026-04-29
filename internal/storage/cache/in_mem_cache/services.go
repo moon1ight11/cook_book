@@ -14,10 +14,10 @@ func (c *inMemoryCache) Get(id string) (*domain.Recipe, bool) {
 	// получаем рецепт
 	item, exists := c.recipes[id]
 	if !exists {
-		c.logger.Info("cache miss", "id", id)
+		c.logger.Info("Cache miss", "id", id)
 		return nil, false
 	}
-	c.logger.Info("cache hit", "id", id)
+	c.logger.Info("Cache hit", "id", id)
 
 	// если запись просрочена - не возвращаем ничего
 	if time.Now().After(item.expiresAt) {
@@ -66,10 +66,10 @@ func (c *inMemoryCache) GetByTags(tagsKey string) ([]*domain.Recipe, bool) {
 	// получаем записи
 	item, exists := c.tagRecipes[tagsKey]
 	if !exists {
-		c.logger.Info("cache by tags miss", "tags", tagsKey)
+		c.logger.Info("Cache by tags miss", "tags", tagsKey)
 		return nil, false
 	}
-	c.logger.Info("cache by tags hit", "tags", tagsKey)
+	c.logger.Info("Cache by tags hit", "tags", tagsKey)
 
 	// если просрочено - прокидываем
 	if time.Now().After(item.expiresAt) {

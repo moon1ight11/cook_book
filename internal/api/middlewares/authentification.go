@@ -47,10 +47,10 @@ func RequireRole(roles ...string) echo.MiddlewareFunc {
 
 			// сравниваем с разрешенной
 			for _, role := range roles {
-                if userRole == role {
-                    return next(c)
-                }
-            }
+				if userRole == role {
+					return next(c)
+				}
+			}
 
 			return echo.NewHTTPError(http.StatusForbidden, "access violation")
 		}

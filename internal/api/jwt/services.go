@@ -67,7 +67,7 @@ func (s *JWTService) ValidateAccessToken(tokenString string) (*AccessTokenClaims
 	return nil, fmt.Errorf("error in ValidateAccessToken: %w", err)
 }
 
-// декодировка и валидация рефреш токена 
+// декодировка и валидация рефреш токена
 func (s *JWTService) ValidateRefreshToken(tokenString string) (*RefreshTokenClaims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.refreshSecret), nil

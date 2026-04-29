@@ -1,5 +1,3 @@
-environment: "development"
-
 server:
   port: 8080
   host: "localhost"
@@ -15,7 +13,6 @@ database:
   name: "cook_book"
   user: "admin"
   password: "123"
-  admin_password: "qazwsxedc123"
 
 jwt:
   access_secret: "1129qwerty!2911"
@@ -25,7 +22,7 @@ jwt:
 
 logger:
   level: "debug"
-  filepath: "logs/app.log"
+  filepath: "logs/cookBookLogs.log"
   maxsize: 10
 
 cache:

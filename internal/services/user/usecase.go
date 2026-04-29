@@ -240,7 +240,6 @@ func (u *userUseCase) UpdateUser(
 		}
 		hashedPass = string(hashedBytes)
 		hashedPassPtr = &hashedPass
-		fmt.Println(hashedPassPtr)
 		needsNewTokens = true
 	}
 

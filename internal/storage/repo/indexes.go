@@ -27,11 +27,11 @@ func (im *IndexManager) CreateAllIndexes(ctx context.Context) error {
 	if err := im.createRecipeIndexes(ctx); err != nil {
 		return fmt.Errorf("failed to create recipe indexes: %w", err)
 	}
-	
+
 	if err := im.createUserIndexes(ctx); err != nil {
 		return fmt.Errorf("failed to create user indexes: %w", err)
 	}
-	
+
 	return nil
 }
 

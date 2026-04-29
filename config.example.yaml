@@ -1,0 +1,32 @@
+environment: "development"
+
+server:
+  port: 8080
+  host: "localhost"
+
+admin:
+  name: "your_admin_name"
+  email: "your_admin_email"
+  password: "your_admin_pasword"
+
+database:
+  host: "localhost"
+  port: 27017
+  name: "cook_book"
+  user: "user_name"
+  password: "user_password"
+
+jwt:
+  access_secret: "your_access_secret"
+  refresh_secret: "your_refresh_secret"
+  access_expiry: "15m"
+  refresh_expiry: "24h"
+
+logger:
+  level: "debug"
+  filepath: "logs/app.log"
+  maxsize: 10
+
+cache:
+  ttl: "5m"
+  cleanupinterval: "1m"

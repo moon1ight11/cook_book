@@ -37,7 +37,7 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	// Middleware для корс
 	r.engine.Use(middleware.CORSWithConfig(
 		middleware.CORSConfig{
-			AllowOrigins:     []string{"https://my-app.com", "http://localhost:3000"},
+			AllowOrigins:     []string{"http://localhost:3000"},
 			AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
 			AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 			AllowCredentials: true,
@@ -66,7 +66,7 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	// группа хэндлеров аутентификации
 	authGroup.POST("/sign-up", r.authHandler.SignUp)
 	authGroup.POST("/sign-in", r.authHandler.SignIn)
-	authGroup.POST("/token-refresh", r.authHandler.RefreshToken) 
+	authGroup.POST("/token-refresh", r.authHandler.RefreshToken)
 
 	// группа публичных хэндлеров с рецептами
 	publicGroup.GET("/recipes", r.recipeHandler.ListRecipes)

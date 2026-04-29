@@ -19,6 +19,13 @@ type ServerConfig struct {
 	Host string `mapstructure:"host"`
 }
 
+// конфигурация админа сайта
+type AdminConfig struct {
+	Name     string `mapstructure:"name"`
+	Password string `mapstructure:"password"`
+	Email    string `mapstructure:"email"`
+}
+
 // конфигурация бд
 type MongoConfig struct {
 	User     string `mapstructure:"user"`
@@ -26,13 +33,6 @@ type MongoConfig struct {
 	Port     int    `mapstructure:"port"`
 	Name     string `mapstructure:"name"`
 	Password string `mapstructure:"password"`
-}
-
-// конфигурация админа сайта
-type AdminConfig struct {
-	Name     string `mapstructure:"name"`
-	Password string `mapstructure:"password"`
-	Email    string `mapstructure:"email"`
 }
 
 // jwt-конфигурация

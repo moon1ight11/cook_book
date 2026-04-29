@@ -17,6 +17,6 @@ type RecipeCacheInterface interface {
 
 // статистика кэша
 type CacheStats struct {
-    TotalItems   int
-    TotalTagSets int
+	TotalItems   int
+	TotalTagSets int
 }
