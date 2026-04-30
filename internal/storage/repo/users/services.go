@@ -196,7 +196,7 @@ func (u *userRepo) CleanExpiredRefreshTokens(ctx context.Context) error {
 	}
 
 	if result.ModifiedCount > 0 {
-		u.logger.Info("Cleaned %d expired refresh tokens\n", result.ModifiedCount)
+		u.logger.Info("Cleaned expired refresh tokens", "count", result.ModifiedCount)
 	}
 
 	return nil
