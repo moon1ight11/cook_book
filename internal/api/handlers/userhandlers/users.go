@@ -1,6 +1,7 @@
 package userhandlers
 
 import (
+	"cook_book/internal/metrics"
 	"cook_book/internal/services"
 	"cook_book/pkg/logger"
 )
@@ -9,12 +10,14 @@ import (
 type UserHandler struct {
 	useCase services.UserUseCaseInterface
 	logger  logger.Logger
+	metrics *metrics.Metrics
 }
 
 // конструктор
-func NewUserHandler(useCase services.UserUseCaseInterface, logger logger.Logger) *UserHandler {
+func NewUserHandler(useCase services.UserUseCaseInterface, logger logger.Logger, metrics *metrics.Metrics) *UserHandler {
 	return &UserHandler{
 		useCase: useCase,
 		logger:  logger,
+		metrics: metrics,
 	}
 }

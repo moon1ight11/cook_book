@@ -4,6 +4,7 @@ import (
 	"context"
 	"cook_book/internal/api/models"
 	"cook_book/internal/domain"
+	"cook_book/internal/metrics"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,15 +15,20 @@ import (
 
 // создание рецепта
 func (h *RecipeHandler) CreateRecipe(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("CreateRecipe")
+
 	// получаем id пользователя из контекста
 	userId, ok := c.Get("user_id").(string)
 	if !ok {
+		h.metrics.RecordError(string(metrics.ErrForbidden), "CreateRecipe")
 		h.logger.Error("Error in CreateRecipe:", "error", "unauthorized")
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
 
 	ownerId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrForbidden), "CreateRecipe")
 		h.logger.Error("Error in CreateRecipe:", "error", "unauthorized")
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -30,12 +36,14 @@ func (h *RecipeHandler) CreateRecipe(c echo.Context) error {
 	var req models.CreateRecipeRequest
 	// получаем рецепт с фронта
 	if err := c.Bind(&req); err != nil {
+		h.metrics.RecordError(string(metrics.ErrBadRequest), "CreateRecipe")
 		h.logger.Error("Error in CreateRecipe:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
 
 	// валидируем поля рецепта
 	if err := req.Validate(); err != nil {
+		h.metrics.RecordError(string(metrics.ErrForbidden), "CreateRecipe")
 		h.logger.Error("Error in CreateRecipe:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -61,6 +69,7 @@ func (h *RecipeHandler) CreateRecipe(c echo.Context) error {
 	// добавляем рецепт
 	err = h.useCase.CreateRecipe(ctx, recipe)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "CreateRecipe")
 		h.logger.Error("Error in CreateRecipe:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -73,12 +82,16 @@ func (h *RecipeHandler) CreateRecipe(c echo.Context) error {
 
 // обновление рецепта
 func (h *RecipeHandler) UpdateRecipe(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("UpdateRecipe")
+
 	// получаем id из параметров
 	id := c.Param("recipe_id")
 
 	// приводим в правильный формат
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrBadRequest), "UpdateRecipe")
 		h.logger.Error("Error in UpdateRecipe:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -86,12 +99,14 @@ func (h *RecipeHandler) UpdateRecipe(c echo.Context) error {
 	// получаем id пользователя из контекста
 	userId, ok := c.Get("user_id").(string)
 	if !ok {
+		h.metrics.RecordError(string(metrics.ErrForbidden), "UpdateRecipe")
 		h.logger.Error("Error in UpdateRecipe:", "error", err)
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
 
 	userID, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrForbidden), "UpdateRecipe")
 		h.logger.Error("Error in UpdateRecipe:", "error", err)
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -100,6 +115,7 @@ func (h *RecipeHandler) UpdateRecipe(c echo.Context) error {
 	var req models.UpdateRecipe
 	// получаем рецепт с фронта
 	if err := c.Bind(&req); err != nil {
+		h.metrics.RecordError(string(metrics.ErrBadRequest), "UpdateRecipe")
 		h.logger.Error("Error in UpdateRecipe:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -124,6 +140,7 @@ func (h *RecipeHandler) UpdateRecipe(c echo.Context) error {
 		req.Tags,
 	)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "UpdateRecipe")
 		h.logger.Error("Error in UpdateRecipe:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -136,6 +153,9 @@ func (h *RecipeHandler) UpdateRecipe(c echo.Context) error {
 
 // получение рецепта
 func (h *RecipeHandler) GetRecipe(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("GetRecipe")
+
 	// из параметров достаем id рецепта
 	id := c.Param("recipe_id")
 
@@ -146,6 +166,7 @@ func (h *RecipeHandler) GetRecipe(c echo.Context) error {
 	// получаем рецепт
 	recipe, err := h.useCase.GetRecipeByID(ctx, id)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "GetRecipe")
 		h.logger.Error("Error in GetRecipe:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -156,12 +177,16 @@ func (h *RecipeHandler) GetRecipe(c echo.Context) error {
 
 // удаление рецепта
 func (h *RecipeHandler) DeleteRecipe(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("DeleteRecipe")
+
 	// получаем id из параметров
 	id := c.Param("recipe_id")
 
 	// получаем id пользователя из контекста
 	userId, ok := c.Get("user_id").(string)
 	if !ok {
+		h.metrics.RecordError(string(metrics.ErrForbidden), "GetRecipe")
 		h.logger.Error("Error in DeleteRecipe:", "error", "unauthorized")
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -173,6 +198,7 @@ func (h *RecipeHandler) DeleteRecipe(c echo.Context) error {
 	// удаление рецепта
 	err := h.useCase.DeleteRecipe(ctx, id, userId)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "GetRecipe")
 		h.logger.Error("Error in DeleteRecipe:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -184,6 +210,9 @@ func (h *RecipeHandler) DeleteRecipe(c echo.Context) error {
 
 // получение всех рецептов с фильрами и пагинацией
 func (h *RecipeHandler) ListRecipes(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("ListRecipes")
+
 	// получаем и валидируем данные для пагинации
 	page, _ := strconv.Atoi(c.QueryParam("page"))
 	pageSize, _ := strconv.Atoi(c.QueryParam("page_size"))
@@ -211,6 +240,7 @@ func (h *RecipeHandler) ListRecipes(c echo.Context) error {
 	// получаем рецепты и коничество
 	recipes, total, err := h.useCase.ListRecipes(ctx, filters, page, pageSize)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "ListRecipes")
 		h.logger.Error("Error in ListRecipes:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -238,9 +268,13 @@ func (h *RecipeHandler) ListRecipes(c echo.Context) error {
 
 // получение рецептов по тегам
 func (h *RecipeHandler) SearchByTags(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("SearchByTags")
+
 	// ищем теги в квери параметрах
 	tags := c.QueryParams()["tags"]
 	if len(tags) == 0 {
+		h.metrics.RecordError(string(metrics.ErrBadRequest), "SearchByTags")
 		h.logger.Error("Error in SearchByTags:", "error", "len(tags) = 0")
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -252,6 +286,7 @@ func (h *RecipeHandler) SearchByTags(c echo.Context) error {
 	// получаем рецепты
 	recipes, err := h.useCase.SearchByTags(ctx, tags)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "SearchByTags")
 		h.logger.Error("Error in SearchByTags:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -268,6 +303,9 @@ func (h *RecipeHandler) SearchByTags(c echo.Context) error {
 
 // поиск рецептов по пользователю
 func (h *RecipeHandler) SearchByUser(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("SearchByUser")
+
 	// из параметров достаем id пользователя
 	id := c.Param("user_id")
 
@@ -275,8 +313,10 @@ func (h *RecipeHandler) SearchByUser(c echo.Context) error {
 	ctx, cancel := context.WithTimeout(c.Request().Context(), time.Second*5)
 	defer cancel()
 
+	// получаем рецепты
 	recipes, err := h.useCase.GetRecipeByUser(ctx, id)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "SearchByTags")
 		h.logger.Error("Error in SearchByTags:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -293,6 +333,9 @@ func (h *RecipeHandler) SearchByUser(c echo.Context) error {
 
 // ADMIN: удаление рецепта
 func (h *RecipeHandler) DeleteAnyRecipe(c echo.Context) error {
+	// записываем операцию в метрики
+	h.metrics.RecordOperation("DeleteRecipe_ADMIN")
+
 	// получаем id из параметров
 	id := c.Param("recipe_id")
 
@@ -302,6 +345,7 @@ func (h *RecipeHandler) DeleteAnyRecipe(c echo.Context) error {
 
 	recipe, err := h.useCase.GetRecipeByID(ctx, id)
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "DeleteRecipe_ADMIN")
 		h.logger.Error("Error in DeleteAnyRecipe:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -309,6 +353,7 @@ func (h *RecipeHandler) DeleteAnyRecipe(c echo.Context) error {
 	// удаляем рецепт
 	err = h.useCase.DeleteRecipe(ctx, id, recipe.OwnerId.Hex())
 	if err != nil {
+		h.metrics.RecordError(string(metrics.ErrInternal), "DeleteRecipe_ADMIN")
 		h.logger.Error("Error in DeleteAnyRecipe:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}

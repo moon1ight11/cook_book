@@ -40,7 +40,7 @@ type UserUseCaseInterface interface {
 	UpdateUser(ctx context.Context, id string, name *string, email *string, password *string) error
 	UpdateUserRole(ctx context.Context, newRole domain.Role, id string) error
 	DeleteUser(ctx context.Context, id string) error
-	DeleteAnyUser(фctx context.Context, id string) error
+	DeleteAnyUser(ctx context.Context, id string) error
 	SignOut(ctx context.Context, userID string) error
 	CleanExpiredTokens(ctx context.Context) error
 }

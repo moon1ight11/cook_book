@@ -4,10 +4,12 @@ import (
 	"cook_book/internal/api/handlers"
 	"cook_book/internal/api/jwt"
 	"cook_book/internal/api/middlewares"
+	"cook_book/internal/metrics"
 	"cook_book/pkg/logger"
+	"net/http"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"net/http"
 )
 
 // структура роутера
@@ -33,7 +35,10 @@ func NewRouter(
 }
 
 // инициализация роутов
-func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
+func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface, metrics *metrics.Metrics) {
+	// Middleware для метрик
+	r.engine.Use(metrics.EchoMiddleware())
+
 	// Middleware для корс
 	r.engine.Use(middleware.CORSWithConfig(
 		middleware.CORSConfig{
@@ -48,6 +53,9 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface) {
 	r.engine.GET("/health", func(c echo.Context) error {
 		return c.String(http.StatusOK, "OK")
 	})
+
+	// эндпоинт для сбора метрик
+	metrics.RegisterMetricsHandler(r.engine, "/metrics")
 
 	// группировка роутов
 	authGroup := r.engine.Group("/api/v1/auth")

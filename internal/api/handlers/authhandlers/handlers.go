@@ -4,16 +4,22 @@ import (
 	"context"
 	"cook_book/internal/api/models"
 	"cook_book/internal/domain"
-	"github.com/labstack/echo/v4"
+	"cook_book/internal/metrics"
 	"net/http"
 	"time"
+
+	"github.com/labstack/echo/v4"
 )
 
 // регистрация
 func (a *AuthHandler) SignUp(c echo.Context) error {
+	// записываем операцию в метрики
+	a.metrics.RecordOperation("SignUp")
+
 	// получаем пользователя с фронта
 	var req models.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
+		a.metrics.RecordError(string(metrics.ErrBadRequest), "SignUp")
 		a.logger.Error("Error in SignUp:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -24,6 +30,7 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 
 	// валидируем входные данные
 	if req.Name == "" || req.Email == "" || req.Password == "" {
+		a.metrics.RecordError(string(metrics.ErrBadRequest), "SignUp")
 		a.logger.Error("Error in SignUp:", "error", "name, email and password are required")
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "name, email and password are required"})
 	}
@@ -39,6 +46,7 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 		Role:     req.Role,
 	})
 	if err != nil {
+		a.metrics.RecordError(string(metrics.ErrInternal), "SignUp")
 		a.logger.Error("Error in SignUp:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -49,6 +57,7 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 		Password: req.Password,
 	})
 	if err != nil {
+		a.metrics.RecordError(string(metrics.ErrForbidden), "SignUp")
 		a.logger.Error("Error in SignUp:", "error", err)
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -65,9 +74,13 @@ func (a *AuthHandler) SignUp(c echo.Context) error {
 
 // логин
 func (a *AuthHandler) SignIn(c echo.Context) error {
+	// записываем операцию в метрики
+	a.metrics.RecordOperation("SignIn")
+
 	// получаем пользователя с фронта
 	var req models.LoginRequest
 	if err := c.Bind(&req); err != nil {
+		a.metrics.RecordError(string(metrics.ErrBadRequest), "SignIn")
 		a.logger.Error("Error in SignIn:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -82,6 +95,7 @@ func (a *AuthHandler) SignIn(c echo.Context) error {
 		Password: req.Password,
 	})
 	if err != nil {
+		a.metrics.RecordError(string(metrics.ErrForbidden), "SignIn")
 		a.logger.Error("Error in SignIn:", "error", err)
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -98,9 +112,13 @@ func (a *AuthHandler) SignIn(c echo.Context) error {
 
 // обновление токенов
 func (a *AuthHandler) RefreshToken(c echo.Context) error {
+	// записываем операцию в метрики
+	a.metrics.RecordOperation("RefreshToken")
+
 	// получаем рефреш токен с фронта
 	var req models.RefreshTokenRequest
 	if err := c.Bind(&req); err != nil {
+		a.metrics.RecordError(string(metrics.ErrBadRequest), "RefreshToken")
 		a.logger.Error("Error in RefreshToken:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -112,6 +130,7 @@ func (a *AuthHandler) RefreshToken(c echo.Context) error {
 	// передаем токен в сервисы
 	response, err := a.useCase.RefreshTokens(ctx, req.RefreshToken)
 	if err != nil {
+		a.metrics.RecordError(string(metrics.ErrForbidden), "RefreshToken")
 		a.logger.Error("Error in RefreshToken:", "error", err)
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -127,9 +146,13 @@ func (a *AuthHandler) RefreshToken(c echo.Context) error {
 }
 
 func (a *AuthHandler) SignOut(c echo.Context) error {
+	// записываем операцию в метрики
+	a.metrics.RecordOperation("SignOut")
+
 	// получаем user_id из контекста
 	userID, ok := c.Get("user_id").(string)
 	if !ok {
+		a.metrics.RecordError(string(metrics.ErrForbidden), "SignOut")
 		a.logger.Error("Error in SignOut:", "error", "unauthoried")
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -141,6 +164,7 @@ func (a *AuthHandler) SignOut(c echo.Context) error {
 	// удаляем рефреш токен
 	err := a.useCase.SignOut(ctx, userID)
 	if err != nil {
+		a.metrics.RecordError(string(metrics.ErrInternal), "SignOut")
 		a.logger.Error("Error in SignOut:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}

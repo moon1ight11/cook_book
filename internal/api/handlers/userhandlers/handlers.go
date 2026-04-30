@@ -4,6 +4,7 @@ import (
 	"context"
 	"cook_book/internal/api/models"
 	"cook_book/internal/domain"
+	"cook_book/internal/metrics"
 	"net/http"
 	"time"
 
@@ -12,9 +13,13 @@ import (
 
 // получение пользователя
 func (u *UserHandler) GetUser(c echo.Context) error {
+	// записываем операцию в метрики
+	u.metrics.RecordOperation("GetUser")
+
 	// получаем id пользователя из контекста
 	id, ok := c.Get("user_id").(string)
 	if !ok {
+		u.metrics.RecordError(string(metrics.ErrForbidden), "GetUser")
 		u.logger.Error("Error in GetUser:", "error", "unauthoried")
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthoried"})
 	}
@@ -26,6 +31,7 @@ func (u *UserHandler) GetUser(c echo.Context) error {
 	// идем за пользователем в сервисы
 	user, err := u.useCase.GetUserByID(ctx, id)
 	if err != nil {
+		u.metrics.RecordError(string(metrics.ErrInternal), "GetUser")
 		u.logger.Error("Error in GetUser:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -37,9 +43,13 @@ func (u *UserHandler) GetUser(c echo.Context) error {
 
 // обновление пользователя
 func (u *UserHandler) UpdateUser(c echo.Context) error {
+	// записываем операцию в метрики
+	u.metrics.RecordOperation("UpdateUser")
+
 	// получаем id пользователя из контекста
 	id, ok := c.Get("user_id").(string)
 	if !ok {
+		u.metrics.RecordError(string(metrics.ErrBadRequest), "UpdateUser")
 		u.logger.Error("Error in UpdateUser:", "error", "unauthoried")
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "unauthoried"})
 	}
@@ -47,6 +57,7 @@ func (u *UserHandler) UpdateUser(c echo.Context) error {
 	// получаем обновленного пользователя с фронта
 	var req models.UpdateUserRequest
 	if err := c.Bind(&req); err != nil {
+		u.metrics.RecordError(string(metrics.ErrBadRequest), "UpdateUser")
 		u.logger.Error("Error in UpdateUser:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -58,6 +69,7 @@ func (u *UserHandler) UpdateUser(c echo.Context) error {
 	// идем в сервисы обновлять пользователя
 	err := u.useCase.UpdateUser(ctx, id, req.Name, req.Email, req.Password)
 	if err != nil {
+		u.metrics.RecordError(string(metrics.ErrInternal), "UpdateUser")
 		u.logger.Error("Error in UpdateUser:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -69,9 +81,13 @@ func (u *UserHandler) UpdateUser(c echo.Context) error {
 
 // удаление пользователя
 func (u *UserHandler) DeleteUser(c echo.Context) error {
+	// записываем операцию в метрики
+	u.metrics.RecordOperation("DeleteUser")
+
 	// получаем id пользователя из контекста
 	id, ok := c.Get("user_id").(string)
 	if !ok {
+		u.metrics.RecordError(string(metrics.ErrForbidden), "DeleteUser")
 		u.logger.Error("Error in DeleteUser:", "error", "unauthoried")
 		return c.JSON(http.StatusUnauthorized, models.ErrorResponse{Error: "unauthorized"})
 	}
@@ -83,6 +99,7 @@ func (u *UserHandler) DeleteUser(c echo.Context) error {
 	// идем в сервисы удалять пользователя
 	err := u.useCase.DeleteUser(ctx, id)
 	if err != nil {
+		u.metrics.RecordError(string(metrics.ErrInternal), "DeleteUser")
 		u.logger.Error("Error in UpdateUser:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -94,6 +111,9 @@ func (u *UserHandler) DeleteUser(c echo.Context) error {
 
 // ADMIN: обновление роли пользователя
 func (u *UserHandler) UpdateUserRole(c echo.Context) error {
+	// записываем операцию в метрики
+	u.metrics.RecordOperation("UpdateUserRole_ADMIN")
+
 	// получаем id из параметров
 	id := c.Param("user_id")
 
@@ -102,6 +122,7 @@ func (u *UserHandler) UpdateUserRole(c echo.Context) error {
 		Role domain.Role `json:"role"`
 	}
 	if err := c.Bind(&newUserRole); err != nil {
+		u.metrics.RecordError(string(metrics.ErrBadRequest), "UpdateUserRole_ADMIN")
 		u.logger.Error("Error in UpdateUserRole:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -113,6 +134,7 @@ func (u *UserHandler) UpdateUserRole(c echo.Context) error {
 	// обновляем роль
 	err := u.useCase.UpdateUserRole(ctx, newUserRole.Role, id)
 	if err != nil {
+		u.metrics.RecordError(string(metrics.ErrInternal), "UpdateUserRole_ADMIN")
 		u.logger.Error("Error in UpdateUserRole:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -124,6 +146,9 @@ func (u *UserHandler) UpdateUserRole(c echo.Context) error {
 
 // ADMIN: удаление пользователя
 func (u *UserHandler) DeleteAnyUser(c echo.Context) error {
+	// записываем операцию в метрики
+	u.metrics.RecordOperation("DeleteUser_ADMIN")
+
 	// получаем id из параметров
 	id := c.Param("user_id")
 
@@ -134,6 +159,7 @@ func (u *UserHandler) DeleteAnyUser(c echo.Context) error {
 	// удаляем пользователя
 	err := u.useCase.DeleteAnyUser(ctx, id)
 	if err != nil {
+		u.metrics.RecordError(string(metrics.ErrInternal), "DeleteUser_ADMIN")
 		u.logger.Error("Error in DeleteAnyUser:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}
@@ -145,9 +171,13 @@ func (u *UserHandler) DeleteAnyUser(c echo.Context) error {
 
 // ADMIN: создание админа
 func (u *UserHandler) CreateAdmin(c echo.Context) error {
+	// записываем операцию в метрики
+	u.metrics.RecordOperation("CreateAdmin_ADMIN")
+
 	// получаем пользователя с фронта
 	var req models.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
+		u.metrics.RecordError(string(metrics.ErrBadRequest), "CreateAdmin_ADMIN")
 		u.logger.Error("Error in CreateAdmin:", "error", err)
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "bad request"})
 	}
@@ -158,6 +188,7 @@ func (u *UserHandler) CreateAdmin(c echo.Context) error {
 
 	// валидируем входные данные
 	if req.Name == "" || req.Email == "" || req.Password == "" {
+		u.metrics.RecordError(string(metrics.ErrBadRequest), "CreateAdmin_ADMIN")
 		u.logger.Error("Error in SignUp:", "error", "name, email and password are required")
 		return c.JSON(http.StatusBadRequest, models.ErrorResponse{Error: "name, email and password are required"})
 	}
@@ -173,6 +204,7 @@ func (u *UserHandler) CreateAdmin(c echo.Context) error {
 		Role:     req.Role,
 	})
 	if err != nil {
+		u.metrics.RecordError(string(metrics.ErrInternal), "CreateAdmin_ADMIN")
 		u.logger.Error("Error in CreateAdmin:", "error", err)
 		return c.JSON(http.StatusInternalServerError, models.ErrorResponse{Error: "internal server error"})
 	}

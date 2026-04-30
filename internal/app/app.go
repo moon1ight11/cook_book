@@ -9,6 +9,7 @@ import (
 	"cook_book/internal/api/handlers/userhandlers"
 	"cook_book/internal/api/jwt"
 	"cook_book/internal/config"
+	"cook_book/internal/metrics"
 	"cook_book/internal/services"
 	"cook_book/internal/services/recipe"
 	"cook_book/internal/services/user"
@@ -27,8 +28,10 @@ type Dependencies struct {
 	Config         *config.Config
 	Logger         logger.Logger
 	DB             *storage.DataBase
-	JWTService     *jwt.JWTService
+	JWTService     jwt.JWTInterface
 	RecipeCache    cache.RecipeCacheInterface
+	RecipeRepo     repo.RecipeRepositoryInterface
+	UsersRepo      repo.UserRepositoryInterface
 	RecipeUseCase  services.RecipeUseCaseInterface
 	UserUseCase    services.UserUseCaseInterface
 	RecipeHandler  handlers.RecipeHandlersInterface
@@ -37,6 +40,7 @@ type Dependencies struct {
 	Router         *api.Router
 	CleanupService *jwt.CleanupService
 	Server         *http.Server
+	Metrics        metrics.Metrics
 }
 
 func NewDependencies(ctx context.Context) (*Dependencies, error) {
@@ -52,12 +56,15 @@ func NewDependencies(ctx context.Context) (*Dependencies, error) {
 		return nil, err
 	}
 
+	metrics := metrics.NewMetrics()
+
 	// соединение с БД
 	db, err := storage.NewStorage(cfg)
 	if err != nil {
 		return nil, err
 	}
 
+	// применение тн миграций
 	err = storage.MigrateAdminUser(db.DB, cfg)
 	if err != nil {
 		logger.Error("Failed to create migrations", "error", err)
@@ -91,9 +98,9 @@ func NewDependencies(ctx context.Context) (*Dependencies, error) {
 	recipeUseCase := recipe.NewRecipeUseCase(recipeRepo, recipeCache)
 	userUseCase := user.NewUserUseCase(userRepo, jwtService)
 
-	recipeHandler := recipehandlers.NewRecipeHandler(recipeUseCase, logger)
-	authHandler := authhandlers.NewAuthHandler(userUseCase, logger, jwtService)
-	userHandler := userhandlers.NewUserHandler(userUseCase, logger)
+	recipeHandler := recipehandlers.NewRecipeHandler(recipeUseCase, logger, metrics)
+	authHandler := authhandlers.NewAuthHandler(userUseCase, logger, jwtService, metrics)
+	userHandler := userhandlers.NewUserHandler(userUseCase, logger, metrics)
 
 	// инициализируем клинер
 	cleanupService := jwt.NewCleanupService(userUseCase, logger)
@@ -102,7 +109,7 @@ func NewDependencies(ctx context.Context) (*Dependencies, error) {
 	router := api.NewRouter(recipeHandler, authHandler, userHandler)
 
 	// инициализация роутов
-	router.Init(logger, jwtService)
+	router.Init(logger, jwtService, metrics)
 
 	// создаем HTTP сервер
 	server := &http.Server{
@@ -116,6 +123,8 @@ func NewDependencies(ctx context.Context) (*Dependencies, error) {
 		DB:             db,
 		JWTService:     jwtService,
 		RecipeCache:    recipeCache,
+		RecipeRepo:     recipeRepo,
+		UsersRepo:      userRepo,
 		RecipeUseCase:  recipeUseCase,
 		UserUseCase:    userUseCase,
 		RecipeHandler:  recipeHandler,
