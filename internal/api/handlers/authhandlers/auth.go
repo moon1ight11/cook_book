@@ -12,7 +12,7 @@ type AuthHandler struct {
 	useCase services.UserUseCaseInterface
 	logger  logger.Logger
 	jwt     jwt.JWTInterface
-	metrics *metrics.Metrics
+	metrics metrics.MetricsInterface
 }
 
 // конструктор
@@ -20,7 +20,7 @@ func NewAuthHandler(
 	useCase services.UserUseCaseInterface,
 	logger logger.Logger,
 	jwt jwt.JWTInterface,
-	metrics *metrics.Metrics,
+	metrics metrics.MetricsInterface,
 ) *AuthHandler {
 	return &AuthHandler{
 		useCase: useCase,

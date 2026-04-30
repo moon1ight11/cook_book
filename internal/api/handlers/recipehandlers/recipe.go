@@ -10,11 +10,15 @@ import (
 type RecipeHandler struct {
 	useCase services.RecipeUseCaseInterface
 	logger  logger.Logger
-	metrics *metrics.Metrics
+	metrics metrics.MetricsInterface
 }
 
 // конструктор
-func NewRecipeHandler(useCase services.RecipeUseCaseInterface, logger logger.Logger, metrics *metrics.Metrics) *RecipeHandler {
+func NewRecipeHandler(
+	useCase services.RecipeUseCaseInterface,
+	logger logger.Logger,
+	metrics metrics.MetricsInterface,
+) *RecipeHandler {
 	return &RecipeHandler{
 		useCase: useCase,
 		logger:  logger,

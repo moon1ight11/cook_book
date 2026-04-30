@@ -10,11 +10,15 @@ import (
 type UserHandler struct {
 	useCase services.UserUseCaseInterface
 	logger  logger.Logger
-	metrics *metrics.Metrics
+	metrics metrics.MetricsInterface
 }
 
 // конструктор
-func NewUserHandler(useCase services.UserUseCaseInterface, logger logger.Logger, metrics *metrics.Metrics) *UserHandler {
+func NewUserHandler(
+	useCase services.UserUseCaseInterface,
+	logger logger.Logger,
+	metrics metrics.MetricsInterface,
+) *UserHandler {
 	return &UserHandler{
 		useCase: useCase,
 		logger:  logger,
