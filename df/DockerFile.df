@@ -7,4 +7,3 @@ COPY . .
 RUN go build -o cook_book_api ./cmd/main.go
 
 CMD [ "./cook_book_api" ]
-

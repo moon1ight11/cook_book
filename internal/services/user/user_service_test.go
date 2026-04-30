@@ -21,12 +21,12 @@ import (
 func setupTest() (*userUseCase, *mocks.MockUserRepository, *mocks.MockJWTService) {
 	mockRepo := new(mocks.MockUserRepository)
 	mockJWT := new(mocks.MockJWTService)
-	
+
 	usecase := &userUseCase{
 		repo:       mockRepo,
 		jwtService: mockJWT,
 	}
-	
+
 	return usecase, mockRepo, mockJWT
 }
 
@@ -80,7 +80,7 @@ func TestCreateUser_DuplicateEmail(t *testing.T) {
 	ctx := context.Background()
 
 	existingUser := createTestUser()
-	
+
 	req := &domain.CreateUserRequest{
 		Name:     "TestUser2",
 		Email:    "test@example.com",
@@ -217,8 +217,8 @@ func TestUpdateUser_Success(t *testing.T) {
 
 	user := createTestUser()
 	newName := "NewName"
-	var nilEmail *string = nil 
-	var nilPass *string = nil 
+	var nilEmail *string = nil
+	var nilPass *string = nil
 
 	mockRepo.On("FindByID", ctx, user.Id).Return(user, nil)
 	mockRepo.On("Update", ctx, user.Id, &newName, nilEmail, nilPass).Return(nil)

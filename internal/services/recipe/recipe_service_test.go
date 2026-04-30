@@ -15,12 +15,12 @@ import (
 func setupTest() (*recipeUseCase, *mocks.MockRecipeRepository, *mocks.MockRecipeCache) {
 	mockRepo := new(mocks.MockRecipeRepository)
 	mockCache := new(mocks.MockRecipeCache)
-	
+
 	usecase := &recipeUseCase{
 		repo:  mockRepo,
 		cache: mockCache,
 	}
-	
+
 	return usecase, mockRepo, mockCache
 }
 
@@ -83,7 +83,7 @@ func TestUpdateRecipe_Success(t *testing.T) {
 	ctx := context.Background()
 
 	recipe := createTestRecipe()
-	
+
 	var nilStr *string
 	var nilIngredients *[]domain.Ingredient
 	var nilSteps *[]string
@@ -91,10 +91,10 @@ func TestUpdateRecipe_Success(t *testing.T) {
 	var nilTags *[]string
 
 	newDifficulty := "hard"
-	
-	mockRepo.On("Update", ctx, recipe.Id, recipe.OwnerId, 
-		nilStr, nilStr, nilIngredients, nilSteps, 
-		nilInt, nilInt, nilInt, 
+
+	mockRepo.On("Update", ctx, recipe.Id, recipe.OwnerId,
+		nilStr, nilStr, nilIngredients, nilSteps,
+		nilInt, nilInt, nilInt,
 		&newDifficulty, nilTags).Return(nil)
 	mockCache.On("Delete", recipe.Id.Hex()).Return()
 
@@ -112,7 +112,7 @@ func TestUpdateRecipe_EmptyTitle(t *testing.T) {
 	ctx := context.Background()
 
 	emptyTitle := ""
-	
+
 	err := uc.UpdateRecipe(ctx, primitive.NewObjectID(), primitive.NewObjectID(),
 		&emptyTitle, nil, nil, nil, nil, nil, nil, nil, nil)
 
@@ -223,7 +223,7 @@ func TestListRecipes_Success(t *testing.T) {
 	total := int64(10)
 
 	filters := map[string]interface{}{"difficulty": "easy"}
-	
+
 	mockRepo.On("FindAll", ctx, filters, int64(10), int64(0)).Return(recipes, total, nil)
 
 	result, count, err := uc.ListRecipes(ctx, filters, 1, 10)

@@ -1,4 +1,4 @@
-мopenapi: 3.0.0
+openapi: 3.0.0
 info:
   title: Cook Book API spec
   version: 1.0.0

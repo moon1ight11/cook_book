@@ -1,10 +1,10 @@
 package jwt
 
 import (
-	"testing"
-	"time"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
+	"time"
 )
 
 func setupJWTService() *JWTService {
@@ -97,7 +97,7 @@ func TestValidateAccessToken_InvalidToken(t *testing.T) {
 	s := setupJWTService()
 
 	claims, err := s.ValidateAccessToken("invalid.token.here")
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, claims)
 }
@@ -117,7 +117,7 @@ func TestValidateAccessToken_WrongSecret(t *testing.T) {
 	}
 
 	claims, err := s2.ValidateAccessToken(td.AccessToken)
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, claims)
 }
@@ -135,7 +135,7 @@ func TestValidateAccessToken_ExpiredToken(t *testing.T) {
 	require.NoError(t, err)
 
 	claims, err := s.ValidateAccessToken(td.AccessToken)
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, claims)
 	assert.Contains(t, err.Error(), "token is expired")
@@ -159,7 +159,7 @@ func TestValidateRefreshToken_InvalidToken(t *testing.T) {
 	s := setupJWTService()
 
 	claims, err := s.ValidateRefreshToken("invalid.refresh.token")
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, claims)
 }
@@ -179,7 +179,7 @@ func TestValidateRefreshToken_WrongSecret(t *testing.T) {
 	}
 
 	claims, err := s2.ValidateRefreshToken(td.RefreshToken)
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, claims)
 }
@@ -197,7 +197,7 @@ func TestValidateRefreshToken_ExpiredToken(t *testing.T) {
 	require.NoError(t, err)
 
 	claims, err := s.ValidateRefreshToken(td.RefreshToken)
-	
+
 	assert.Error(t, err)
 	assert.Nil(t, claims)
 	assert.Contains(t, err.Error(), "token is expired")

@@ -72,7 +72,7 @@ func TestCache_Get_Miss(t *testing.T) {
 func TestCache_Get_Expired(t *testing.T) {
 	// создаем кэш с коротким ttl
 	cache := createTestCache(time.Millisecond)
-	
+
 	recipe := createTestRecipe("TestRecipe2")
 	id := recipe.Id.Hex()
 
@@ -92,7 +92,7 @@ func TestCache_Get_Expired(t *testing.T) {
 // удаление записи из кэша
 func TestCache_Delete(t *testing.T) {
 	cache := createTestCache(time.Minute)
-	
+
 	recipe := createTestRecipe("TestRecipe3")
 	id := recipe.Id.Hex()
 
@@ -115,7 +115,7 @@ func TestCache_Delete_NonExistent(t *testing.T) {
 
 	// удаляем несуществующий кэш
 	cache.Delete("FAKEID")
-	
+
 	// проверяем, что все работает
 	_, found := cache.Get("FAKEID")
 	assert.False(t, found)
@@ -207,4 +207,3 @@ func TestCache_GetByTags_Expired(t *testing.T) {
 	assert.False(t, found)
 	assert.Nil(t, cached)
 }
-

@@ -23,7 +23,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -143,12 +143,49 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 2,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": 3600000,
+            "lineInterpolation": "smooth",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 3,
+            "pointSize": 2,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "always",
+            "showValues": false,
+            "spanNulls": 3600000,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "mappings": [],
           "thresholds": {
@@ -176,19 +213,17 @@
       },
       "id": 2,
       "options": {
-        "minVizHeight": 75,
-        "minVizWidth": 75,
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "sizing": "auto"
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
       },
       "pluginVersion": "12.4.2",
       "targets": [
@@ -206,26 +241,18 @@
             "type": "prometheus",
             "uid": "bfkme3w3qpc74b"
           },
-          "expr": "histogram_quantile(0.90, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method, endpoint))",
-          "legendFormat": "P90 {{method}} {{endpoint}}",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "bfkme3w3qpc74b"
-          },
           "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, method, endpoint))",
           "legendFormat": "P99 {{method}} {{endpoint}}",
           "refId": "C"
         }
       ],
-      "title": "Request Duration P50/P90/P99",
-      "type": "gauge"
+      "title": "Request Duration P50/P99",
+      "type": "timeseries"
     },
     {
       "datasource": {
-        "uid": "bfkme3w3qpc74b"
+        "type": "prometheus",
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -347,7 +374,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -433,8 +460,11 @@
             "type": "prometheus",
             "uid": "bfkme3w3qpc74b"
           },
+          "editorMode": "code",
           "expr": "go_memstats_alloc_bytes",
+          "format": "table",
           "legendFormat": "Heap Alloc",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -444,7 +474,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -530,8 +560,11 @@
             "type": "prometheus",
             "uid": "bfkme3w3qpc74b"
           },
+          "editorMode": "code",
           "expr": "go_memstats_stack_inuse_bytes",
+          "format": "table",
           "legendFormat": "Stack In Use",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -541,7 +574,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -627,8 +660,11 @@
             "type": "prometheus",
             "uid": "bfkme3w3qpc74b"
           },
+          "editorMode": "code",
           "expr": "go_memstats_sys_bytes",
+          "format": "table",
           "legendFormat": "Total from OS",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -638,7 +674,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -724,8 +760,11 @@
             "type": "prometheus",
             "uid": "bfkme3w3qpc74b"
           },
+          "editorMode": "code",
           "expr": "rate(go_gc_duration_seconds_sum[5m]) / rate(process_cpu_seconds_total[5m]) * 100",
+          "format": "table",
           "legendFormat": "GC CPU %",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -735,7 +774,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -820,8 +859,11 @@
             "type": "prometheus",
             "uid": "bfkme3w3qpc74b"
           },
+          "editorMode": "code",
           "expr": "go_memstats_heap_objects",
+          "format": "table",
           "legendFormat": "Heap Objects",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -831,7 +873,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -927,7 +969,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -1027,7 +1069,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -1091,7 +1133,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -1185,8 +1227,10 @@
             "type": "prometheus",
             "uid": "bfkme3w3qpc74b"
           },
+          "editorMode": "code",
           "expr": "rate(go_memstats_frees_total[1m])",
           "legendFormat": "Frees/s",
+          "range": true,
           "refId": "B"
         }
       ],
@@ -1196,7 +1240,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "bfkme3w3qpc74b"
+        "uid": "cfl16k500syyof"
       },
       "fieldConfig": {
         "defaults": {
@@ -1308,6 +1352,6 @@
   "timezone": "browser",
   "title": "Cook Book API Metrics 6",
   "uid": "ad8w88v",
-  "version": 2,
+  "version": 8,
   "weekStart": ""
 }
