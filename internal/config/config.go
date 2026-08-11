@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// загрузка конфигурации
 func Load() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
@@ -16,7 +15,7 @@ func Load() (*Config, error) {
 	setDefaults()
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Printf("Warning: Config file not found: %v", err)
+		log.Printf("Config file not found, using defaults: %v", err)
 	}
 
 	var cfg Config
@@ -27,7 +26,6 @@ func Load() (*Config, error) {
 	return &cfg, nil
 }
 
-// дефолтные значения полей конфигурации
 func setDefaults() {
 	viper.SetDefault("environment", "development")
 }

@@ -3,18 +3,17 @@ package repo
 import (
 	"context"
 	"fmt"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// индексы для бд
 type IndexManager struct {
 	recipesCollection *mongo.Collection
 	usersCollection   *mongo.Collection
 }
 
-// конструктор
 func NewIndexManager(recipesCollection, usersCollection *mongo.Collection) *IndexManager {
 	return &IndexManager{
 		recipesCollection: recipesCollection,
@@ -22,7 +21,6 @@ func NewIndexManager(recipesCollection, usersCollection *mongo.Collection) *Inde
 	}
 }
 
-// основная функция создания индексов
 func (im *IndexManager) CreateAllIndexes(ctx context.Context) error {
 	if err := im.createRecipeIndexes(ctx); err != nil {
 		return fmt.Errorf("failed to create recipe indexes: %w", err)
@@ -35,25 +33,19 @@ func (im *IndexManager) CreateAllIndexes(ctx context.Context) error {
 	return nil
 }
 
-// индексы для рецептов
 func (im *IndexManager) createRecipeIndexes(ctx context.Context) error {
 	indexes := []mongo.IndexModel{
 		{
-			Keys: bson.D{{Key: "owner_id", Value: 1}},
-			Options: options.Index().
-				SetName("idx_owner_id"),
+			Keys:    bson.D{{Key: "owner_id", Value: 1}},
+			Options: options.Index().SetName("idx_owner_id"),
 		},
 		{
-			Keys: bson.D{{Key: "tags", Value: 1}},
-			Options: options.Index().
-				SetName("idx_tags"),
+			Keys:    bson.D{{Key: "tags", Value: 1}},
+			Options: options.Index().SetName("idx_tags"),
 		},
 		{
-			Keys: bson.D{
-				{Key: "created_at", Value: -1},
-			},
-			Options: options.Index().
-				SetName("idx_created_at_desc"),
+			Keys:    bson.D{{Key: "created_at", Value: -1}},
+			Options: options.Index().SetName("idx_created_at_desc"),
 		},
 	}
 
@@ -65,14 +57,11 @@ func (im *IndexManager) createRecipeIndexes(ctx context.Context) error {
 	return nil
 }
 
-// индексы для юзеров
 func (im *IndexManager) createUserIndexes(ctx context.Context) error {
 	indexes := []mongo.IndexModel{
 		{
-			Keys: bson.D{{Key: "email", Value: 1}},
-			Options: options.Index().
-				SetName("idx_email_unique").
-				SetUnique(true),
+			Keys:    bson.D{{Key: "email", Value: 1}},
+			Options: options.Index().SetName("idx_email_unique").SetUnique(true),
 		},
 	}
 

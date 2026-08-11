@@ -7,7 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// интерфейс для юзкейсов рецептов
 type RecipeUseCaseInterface interface {
 	CreateRecipe(ctx context.Context, recipe *domain.Recipe) error
 	UpdateRecipe(
@@ -31,7 +30,6 @@ type RecipeUseCaseInterface interface {
 	SearchByTags(ctx context.Context, tags []string) ([]*domain.Recipe, error)
 }
 
-// интерфейс для юзкейсов пользователей
 type UserUseCaseInterface interface {
 	CreateUser(ctx context.Context, req *domain.CreateUserRequest) (*domain.User, error)
 	Login(ctx context.Context, req *domain.LoginRequest) (*models.LoginResponse, error)

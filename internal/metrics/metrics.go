@@ -17,7 +17,7 @@ type Metrics struct {
 }
 
 func NewMetrics() *Metrics {
-	m := &Metrics{
+	return &Metrics{
 		RequestsTotal: promauto.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "http_requests_total",
@@ -68,6 +68,4 @@ func NewMetrics() *Metrics {
 			},
 		),
 	}
-
-	return m
 }

@@ -2,34 +2,30 @@ package recipe
 
 import (
 	"context"
-	"cook_book/internal/domain"
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"sort"
 	"strings"
+
+	"cook_book/internal/domain"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// создание рецепта
 func (uc *recipeUseCase) CreateRecipe(ctx context.Context, recipe *domain.Recipe) error {
-	// валидируем входящий рецепт
 	if err := recipe.RecipeValidate(); err != nil {
-		return fmt.Errorf("error in CreateRecipe: %w", err)
+		return fmt.Errorf("CreateRecipe: %w", err)
 	}
 
-	// если сложность не установлена - ставим среднюю по дефолту
 	if recipe.Difficulty == "" {
 		recipe.Difficulty = "medium"
 	}
 
-	// делаем, чтобы теги всегда были в нижнем регистре
 	for i, tag := range recipe.Tags {
 		recipe.Tags[i] = strings.ToLower(strings.TrimSpace(tag))
 	}
 
-	// создаем запись
-	err := uc.repo.Create(ctx, recipe)
-	if err != nil {
-		return fmt.Errorf("error in CreateRecipe: %w", err)
+	if err := uc.repo.Create(ctx, recipe); err != nil {
+		return fmt.Errorf("CreateRecipe: %w", err)
 	}
 
 	return nil
@@ -49,114 +45,88 @@ func (uc *recipeUseCase) UpdateRecipe(
 	difficulty *string,
 	tags *[]string,
 ) error {
-	// делаем, чтобы теги всегда были в нижнем регистре
 	if tags != nil {
 		for i, tag := range *tags {
 			(*tags)[i] = strings.ToLower(strings.TrimSpace(tag))
 		}
 	}
 
-	// валидируем обязательные поля
-	if title != nil {
-		if strings.TrimSpace(*title) == "" {
-			return fmt.Errorf("error in UpdateRecipe: title is empty")
-		}
+	if title != nil && strings.TrimSpace(*title) == "" {
+		return fmt.Errorf("UpdateRecipe: title is empty")
 	}
 
-	if cooktime != nil {
-		if *cooktime <= 0 {
-			return fmt.Errorf("error in UpdateRecipe: cook time must be positive")
-		}
+	if cooktime != nil && *cooktime <= 0 {
+		return fmt.Errorf("UpdateRecipe: cook time must be positive")
 	}
 
-	if difficulty != nil {
-		if *difficulty != "hard" && *difficulty != "medium" && *difficulty != "easy" {
-			return fmt.Errorf("error in UpdateRecipe: difficulty field is not valid: %s", *difficulty)
-		}
+	if difficulty != nil && *difficulty != "hard" && *difficulty != "medium" && *difficulty != "easy" {
+		return fmt.Errorf("UpdateRecipe: invalid difficulty: %s", *difficulty)
 	}
 
-	// обновляем
-	err := uc.repo.Update(ctx, id, userId, title, description, ingredients, steps, prepTime, cooktime, servings, difficulty, tags)
-	if err != nil {
-		return fmt.Errorf("error in UpdateRecipe: %w", err)
+	if err := uc.repo.Update(ctx, id, userId, title, description, ingredients, steps, prepTime, cooktime, servings, difficulty, tags); err != nil {
+		return fmt.Errorf("UpdateRecipe: %w", err)
 	}
 
-	// удаляем запись из кэша
 	uc.cache.Delete(id.Hex())
 
 	return nil
 }
 
-// удаление записи
 func (uc *recipeUseCase) DeleteRecipe(ctx context.Context, id string, userId string) error {
-	// получаем id рецепта
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return fmt.Errorf("error in DeleteRecipe: %w", err)
+		return fmt.Errorf("DeleteRecipe: %w", err)
 	}
 
 	objectUserId, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return fmt.Errorf("error in DeleteRecipe: %w", err)
+		return fmt.Errorf("DeleteRecipe: %w", err)
 	}
 
-	// удаляем из бд
-	err = uc.repo.Delete(ctx, objectID, objectUserId)
-	if err != nil {
-		return fmt.Errorf("error in DeleteRecipe: %w", err)
+	if err = uc.repo.Delete(ctx, objectID, objectUserId); err != nil {
+		return fmt.Errorf("DeleteRecipe: %w", err)
 	}
 
-	// удаляем запись из кэша
 	uc.cache.Delete(id)
 
 	return nil
 }
 
-// получение рецепта по id
 func (uc *recipeUseCase) GetRecipeByID(ctx context.Context, id string) (*domain.Recipe, error) {
-	// пробуем найти в кэше
 	if cachedRecipe, found := uc.cache.Get(id); found {
 		return cachedRecipe, nil
 	}
 
-	// в кэше не нашли - переводим формат id
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, fmt.Errorf("error in GetRecipeByID: %w", err)
+		return nil, fmt.Errorf("GetRecipeByID: %w", err)
 	}
 
-	// ищем в бд
 	recipe, err := uc.repo.FindByID(ctx, objectID)
 	if err != nil {
-		return nil, fmt.Errorf("error in GetRecipeById: %w", err)
+		return nil, fmt.Errorf("GetRecipeByID: %w", err)
 	}
 
-	// записываем в кэш
 	uc.cache.Set(id, recipe)
 
 	return recipe, nil
 }
 
-// получение списка рецептов конкретного пользователя
 func (uc *recipeUseCase) GetRecipeByUser(ctx context.Context, userId string) ([]*domain.Recipe, error) {
-	//переводим формат id
 	objectID, err := primitive.ObjectIDFromHex(userId)
 	if err != nil {
-		return nil, fmt.Errorf("error in GetRecipeByUser: %w", err)
+		return nil, fmt.Errorf("GetRecipeByUser: %w", err)
 	}
 
-	// ищем в бд
 	recipes, err := uc.repo.FindByUser(ctx, objectID)
 	if err != nil {
-		return nil, fmt.Errorf("error in GetRecipeByUser: %w", err)
+		return nil, fmt.Errorf("GetRecipeByUser: %w", err)
 	}
 
 	return recipes, nil
 }
 
-// получаем список рецептов с фильтрами
 func (uc *recipeUseCase) ListRecipes(ctx context.Context, filters map[string]interface{}, page, pageSize int) ([]*domain.Recipe, int64, error) {
-	// валидируем фильтры
 	if page < 1 {
 		page = 1
 	}
@@ -164,27 +134,22 @@ func (uc *recipeUseCase) ListRecipes(ctx context.Context, filters map[string]int
 		pageSize = 10
 	}
 
-	// устанавливаем размер и номер страницы
 	limit := int64(pageSize)
 	offset := int64((page - 1) * pageSize)
 
-	// получаем из бд
-	recipies, amount, err := uc.repo.FindAll(ctx, filters, limit, offset)
+	recipes, amount, err := uc.repo.FindAll(ctx, filters, limit, offset)
 	if err != nil {
-		return nil, 0, fmt.Errorf("error in ListRecipes: %w", err)
+		return nil, 0, fmt.Errorf("ListRecipes: %w", err)
 	}
 
-	return recipies, amount, nil
+	return recipes, amount, nil
 }
 
-// поиск рецептов по тегу
 func (uc *recipeUseCase) SearchByTags(ctx context.Context, tags []string) ([]*domain.Recipe, error) {
-	// проверяем, чтобы теги были
 	if len(tags) == 0 {
-		return []*domain.Recipe{}, fmt.Errorf("error in SearchByTags: no tags")
+		return []*domain.Recipe{}, fmt.Errorf("SearchByTags: no tags")
 	}
 
-	// преводим теги в нижний регистр
 	for i, tag := range tags {
 		tags[i] = strings.ToLower(strings.TrimSpace(tag))
 	}
@@ -194,18 +159,15 @@ func (uc *recipeUseCase) SearchByTags(ctx context.Context, tags []string) ([]*do
 	sort.Strings(sortedTags)
 	cacheKey := strings.Join(sortedTags, ",")
 
-	// ищем в кэше
 	if cached, found := uc.cache.GetByTags(cacheKey); found {
 		return cached, nil
 	}
 
-	// в кэше не нашли - идем в бд
 	recipes, err := uc.repo.FindByTags(ctx, tags)
 	if err != nil {
-		return nil, fmt.Errorf("error in SearchByTags: %w", err)
+		return nil, fmt.Errorf("SearchByTags: %w", err)
 	}
 
-	// записываем в кэш
 	uc.cache.SetByTags(cacheKey, recipes)
 
 	return recipes, nil

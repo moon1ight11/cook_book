@@ -1,10 +1,11 @@
 package jwt
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupJWTService() *JWTService {
@@ -16,7 +17,6 @@ func setupJWTService() *JWTService {
 	}
 }
 
-// успешное создание токенов
 func TestGenerateTokens_Success(t *testing.T) {
 	s := setupJWTService()
 
@@ -29,28 +29,21 @@ func TestGenerateTokens_Success(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, td)
 
-	// токены не пустые
 	assert.NotEmpty(t, td.AccessToken)
 	assert.NotEmpty(t, td.RefreshToken)
-
-	// токены разные
 	assert.NotEqual(t, td.AccessToken, td.RefreshToken)
 
-	// сроки действия
 	assert.True(t, td.AtExpires > time.Now().Unix())
 	assert.True(t, td.RtExpires > time.Now().Unix())
 	assert.True(t, td.RtExpires > td.AtExpires)
 
-	// access истекает через 15 минут
 	expectedAccessExpiry := time.Now().Add(15 * time.Minute).Unix()
 	assert.InDelta(t, expectedAccessExpiry, td.AtExpires, 0)
 
-	// refresh истекает через 7 дней
 	expectedRefreshExpiry := time.Now().Add(7 * 24 * time.Hour).Unix()
 	assert.InDelta(t, expectedRefreshExpiry, td.RtExpires, 0)
 }
 
-// создание токенов для разных пользователей
 func TestGenerateTokens_DifferentUsers(t *testing.T) {
 	s := setupJWTService()
 
@@ -60,24 +53,20 @@ func TestGenerateTokens_DifferentUsers(t *testing.T) {
 	td2, err := s.GenerateTokens("user2", "user2@test.com", "admin")
 	require.NoError(t, err)
 
-	// токены разные
 	assert.NotEqual(t, td1.AccessToken, td2.AccessToken)
 	assert.NotEqual(t, td1.RefreshToken, td2.RefreshToken)
 
-	// клеймы первого юзера
 	claims1, err := s.ValidateAccessToken(td1.AccessToken)
 	require.NoError(t, err)
 	assert.Equal(t, "user1", claims1.UserID)
 	assert.Equal(t, "basic", claims1.Role)
 
-	// клеймы второго юзера
 	claims2, err := s.ValidateAccessToken(td2.AccessToken)
 	require.NoError(t, err)
 	assert.Equal(t, "user2", claims2.UserID)
 	assert.Equal(t, "admin", claims2.Role)
 }
 
-// успешная валидация аксес токена
 func TestValidateAccessToken_Success(t *testing.T) {
 	s := setupJWTService()
 
@@ -92,7 +81,6 @@ func TestValidateAccessToken_Success(t *testing.T) {
 	assert.Equal(t, "basic", claims.Role)
 }
 
-// валидация неверного аксес токена
 func TestValidateAccessToken_InvalidToken(t *testing.T) {
 	s := setupJWTService()
 
@@ -102,7 +90,6 @@ func TestValidateAccessToken_InvalidToken(t *testing.T) {
 	assert.Nil(t, claims)
 }
 
-// валидация аксес токена с не нашим секретом
 func TestValidateAccessToken_WrongSecret(t *testing.T) {
 	s := setupJWTService()
 
@@ -122,7 +109,6 @@ func TestValidateAccessToken_WrongSecret(t *testing.T) {
 	assert.Nil(t, claims)
 }
 
-// валидация просроченного аксес токена
 func TestValidateAccessToken_ExpiredToken(t *testing.T) {
 	s := &JWTService{
 		accessSecret:  "test_access_secret",
@@ -141,7 +127,6 @@ func TestValidateAccessToken_ExpiredToken(t *testing.T) {
 	assert.Contains(t, err.Error(), "token is expired")
 }
 
-// успешная валидация рефреш токена
 func TestValidateRefreshToken_Success(t *testing.T) {
 	s := setupJWTService()
 
@@ -154,7 +139,6 @@ func TestValidateRefreshToken_Success(t *testing.T) {
 	assert.Equal(t, "user", claims.UserID)
 }
 
-// валидация неправильного рефреша
 func TestValidateRefreshToken_InvalidToken(t *testing.T) {
 	s := setupJWTService()
 
@@ -164,7 +148,6 @@ func TestValidateRefreshToken_InvalidToken(t *testing.T) {
 	assert.Nil(t, claims)
 }
 
-// валидация рефреша с не нашим секретом
 func TestValidateRefreshToken_WrongSecret(t *testing.T) {
 	s := setupJWTService()
 
@@ -184,7 +167,6 @@ func TestValidateRefreshToken_WrongSecret(t *testing.T) {
 	assert.Nil(t, claims)
 }
 
-// валидация рефреша прсроченного
 func TestValidateRefreshToken_ExpiredToken(t *testing.T) {
 	s := &JWTService{
 		accessSecret:  "test_access_secret",
@@ -203,7 +185,6 @@ func TestValidateRefreshToken_ExpiredToken(t *testing.T) {
 	assert.Contains(t, err.Error(), "token is expired")
 }
 
-// генерация токеов с пустыми полями
 func TestGenerateTokens_EmptyFields(t *testing.T) {
 	s := setupJWTService()
 

@@ -1,18 +1,19 @@
 package logger
 
 import (
-	"cook_book/internal/config"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"cook_book/internal/config"
+
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type appLogger struct {
 	*slog.Logger
 }
 
-// New создает новый экземпляр логгера
 func NewLogger(cfg config.LoggerConfig) (Logger, error) {
 	var level slog.Level
 	switch cfg.Level {
@@ -45,8 +46,7 @@ func NewLogger(cfg config.LoggerConfig) (Logger, error) {
 		AddSource: true,
 	}
 
-	var handler slog.Handler
-	handler = slog.NewTextHandler(lumberjackLogger, opts)
+	handler := slog.NewTextHandler(lumberjackLogger, opts)
 
 	logger := slog.New(handler)
 	slog.SetDefault(logger)

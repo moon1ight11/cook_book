@@ -7,7 +7,6 @@ import (
 	"cook_book/pkg/logger"
 )
 
-// структура хэндлера
 type AuthHandler struct {
 	useCase services.UserUseCaseInterface
 	logger  logger.Logger
@@ -15,7 +14,6 @@ type AuthHandler struct {
 	metrics metrics.MetricsInterface
 }
 
-// конструктор
 func NewAuthHandler(
 	useCase services.UserUseCaseInterface,
 	logger logger.Logger,

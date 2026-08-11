@@ -5,7 +5,6 @@ import (
 	"time"
 )
 
-// структура сервиса JWT
 type JWTService struct {
 	accessSecret  string
 	refreshSecret string
@@ -13,7 +12,6 @@ type JWTService struct {
 	refreshExpiry time.Duration
 }
 
-// инфо о токене
 type TokenDetails struct {
 	AccessToken  string
 	RefreshToken string
@@ -21,7 +19,6 @@ type TokenDetails struct {
 	RtExpires    int64
 }
 
-// клеймы для основного токена
 type AccessTokenClaims struct {
 	UserID string `json:"user_id"`
 	Email  string `json:"email"`
@@ -29,13 +26,11 @@ type AccessTokenClaims struct {
 	jwt.RegisteredClaims
 }
 
-// клеймы для рефреш токена
 type RefreshTokenClaims struct {
 	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
-// конструктор
 func NewJWTService(accessSecret, refreshSecret string, accessExpiry, refreshExpiry time.Duration) *JWTService {
 	return &JWTService{
 		accessSecret:  accessSecret,

@@ -5,13 +5,11 @@ import (
 	"cook_book/internal/storage/repo"
 )
 
-// структура юзкейсов
 type userUseCase struct {
 	repo       repo.UserRepositoryInterface
 	jwtService jwt.JWTInterface
 }
 
-// коструктор
 func NewUserUseCase(repo repo.UserRepositoryInterface, jwt jwt.JWTInterface) *userUseCase {
 	return &userUseCase{
 		repo:       repo,

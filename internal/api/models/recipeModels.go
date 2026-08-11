@@ -23,16 +23,16 @@ type CreateRecipeRequest struct {
 // валидация созданного рецепта для апи
 func (r *CreateRecipeRequest) Validate() error {
 	if strings.TrimSpace(r.Title) == "" {
-		return fmt.Errorf("error in ModelsRecipeValidate: empty title")
+		return fmt.Errorf("Validate: empty title")
 	}
 	if len(r.Ingredients) == 0 {
-		return fmt.Errorf("error in ModelsRecipeValidate: no ingredients")
+		return fmt.Errorf("Validate: no ingredients")
 	}
 	if len(r.Steps) == 0 {
-		return fmt.Errorf("error in ModelsRecipeValidate: no steps")
+		return fmt.Errorf("Validate: no steps")
 	}
 	if r.Servings <= 0 {
-		return fmt.Errorf("error in ModelsRecipeValidate: no servings")
+		return fmt.Errorf("Validate: no servings")
 	}
 	return nil
 }

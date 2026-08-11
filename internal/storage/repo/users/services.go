@@ -2,56 +2,46 @@ package users
 
 import (
 	"context"
-	"cook_book/internal/domain"
 	"fmt"
+	"time"
+
+	"cook_book/internal/domain"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"time"
 )
 
-// содание пользователя
 func (u *userRepo) Create(ctx context.Context, user *domain.User) error {
 	user.CreatedAt = time.Now()
-	id := primitive.NewObjectID()
-	user.Id = id
+	user.Id = primitive.NewObjectID()
 
-	_, err := u.collection.InsertOne(ctx, user)
-	if err != nil {
-		return fmt.Errorf("error in userCreate: %w", err)
+	if _, err := u.collection.InsertOne(ctx, user); err != nil {
+		return fmt.Errorf("userCreate: %w", err)
 	}
 
 	return nil
 }
 
-// поиск пользователя по id
 func (u *userRepo) FindByID(ctx context.Context, id primitive.ObjectID) (*domain.User, error) {
 	var user domain.User
 
-	filter := bson.M{"_id": id}
-
-	err := u.collection.FindOne(ctx, filter).Decode(&user)
-	if err != nil {
-		return nil, fmt.Errorf("error in userFindById: %w", err)
+	if err := u.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&user); err != nil {
+		return nil, fmt.Errorf("userFindByID: %w", err)
 	}
 
 	return &user, nil
 }
 
-// поиск пользоателя по емайл
 func (u *userRepo) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var user domain.User
 
-	filter := bson.M{"email": email}
-
-	err := u.collection.FindOne(ctx, filter).Decode(&user)
-	if err != nil {
-		return nil, fmt.Errorf("error in userFindByEmail: %w", err)
+	if err := u.collection.FindOne(ctx, bson.M{"email": email}).Decode(&user); err != nil {
+		return nil, fmt.Errorf("userFindByEmail: %w", err)
 	}
 
 	return &user, nil
 }
 
-// обновление пользователя
 func (u *userRepo) Update(
 	ctx context.Context,
 	id primitive.ObjectID,
@@ -72,54 +62,37 @@ func (u *userRepo) Update(
 	}
 
 	if len(update) == 0 {
-		return fmt.Errorf("error in userUpdate: %s", "nothing to update")
+		return fmt.Errorf("userUpdate: nothing to update")
 	}
 
 	update["updated_at"] = time.Now()
 
-	filter := bson.M{"_id": id}
-
-	result, err := u.collection.UpdateOne(ctx, filter, bson.M{
-		"$set": update,
-	})
+	result, err := u.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": update})
 	if err != nil {
-		return fmt.Errorf("error in userUpdate: %w", err)
+		return fmt.Errorf("userUpdate: %w", err)
 	}
 
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("error in userUpdate: user with id=%s not found", id)
+		return fmt.Errorf("userUpdate: user with id=%s not found", id.Hex())
 	}
 
 	return nil
 }
 
-// обновление роли пользователя
 func (u *userRepo) UpdateRole(ctx context.Context, newRole string, id primitive.ObjectID) error {
-	// ставим фильтр
-	filter := bson.M{"_id": id}
-
-	// выбираем что обновлять
-	update := bson.M{"role": newRole}
-
-	// обновляем
-	result, err := u.collection.UpdateOne(ctx, filter, bson.M{
-		"$set": update,
-	})
+	result, err := u.collection.UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"role": newRole}})
 	if err != nil {
-		return fmt.Errorf("error in userUpdateRole: %w", err)
+		return fmt.Errorf("userUpdateRole: %w", err)
 	}
 
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("error in userUpdateRole: user with id=%s not found", id)
+		return fmt.Errorf("userUpdateRole: user with id=%s not found", id.Hex())
 	}
 
 	return nil
 }
 
-// обновление рефрештокена
 func (u *userRepo) UpdateRefreshToken(ctx context.Context, id primitive.ObjectID, refreshToken string) error {
-	filter := bson.M{"_id": id}
-
 	var expiresAt *time.Time
 	if refreshToken != "" {
 		expiry := time.Now().Add(7 * 24 * time.Hour)
@@ -134,9 +107,9 @@ func (u *userRepo) UpdateRefreshToken(ctx context.Context, id primitive.ObjectID
 		},
 	}
 
-	result, err := u.collection.UpdateOne(ctx, filter, update)
+	result, err := u.collection.UpdateOne(ctx, bson.M{"_id": id}, update)
 	if err != nil {
-		return fmt.Errorf("error in userUpdateRefreshToken: %w", err)
+		return fmt.Errorf("userUpdateRefreshToken: %w", err)
 	}
 
 	if result.MatchedCount == 0 {
@@ -146,40 +119,26 @@ func (u *userRepo) UpdateRefreshToken(ctx context.Context, id primitive.ObjectID
 	return nil
 }
 
-// удаление пользователя
 func (u *userRepo) Delete(ctx context.Context, id primitive.ObjectID) error {
-	filter := bson.M{"_id": id}
-
-	_, err := u.collection.DeleteOne(ctx, filter)
-	if err != nil {
-		return fmt.Errorf("error in userDelete: %w", err)
+	if _, err := u.collection.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
+		return fmt.Errorf("userDelete: %w", err)
 	}
 
 	return nil
 }
 
-// удаление пользователя для админа
 func (u *userRepo) DeleteAny(ctx context.Context, id primitive.ObjectID) error {
-	filter := bson.M{"_id": id}
-
-	_, err := u.collection.DeleteOne(ctx, filter)
-	if err != nil {
-		return fmt.Errorf("error in userDeleteAny: %w", err)
+	if _, err := u.collection.DeleteOne(ctx, bson.M{"_id": id}); err != nil {
+		return fmt.Errorf("userDeleteAny: %w", err)
 	}
 
 	return nil
 }
 
-// очистка просроченных токенов
 func (u *userRepo) CleanExpiredRefreshTokens(ctx context.Context) error {
-	// Находим всех пользователей с истекшими токенами
 	filter := bson.M{
-		"refresh_token_expires_at": bson.M{
-			"$lt": time.Now(),
-		},
-		"refresh_token": bson.M{
-			"$ne": "",
-		},
+		"refresh_token_expires_at": bson.M{"$lt": time.Now()},
+		"refresh_token":            bson.M{"$ne": ""},
 	}
 
 	update := bson.M{
@@ -192,7 +151,7 @@ func (u *userRepo) CleanExpiredRefreshTokens(ctx context.Context) error {
 
 	result, err := u.collection.UpdateMany(ctx, filter, update)
 	if err != nil {
-		return fmt.Errorf("error in CleanExpiredRefreshTokens: %w", err)
+		return fmt.Errorf("CleanExpiredRefreshTokens: %w", err)
 	}
 
 	if result.ModifiedCount > 0 {

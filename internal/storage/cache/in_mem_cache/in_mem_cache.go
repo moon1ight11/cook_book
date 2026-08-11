@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// структура кэша
 type inMemoryCache struct {
 	recipes         map[string]*cacheItem
 	tagRecipes      map[string]*tagCacheItem
@@ -20,19 +19,16 @@ type inMemoryCache struct {
 	stopCleanup     chan bool
 }
 
-// структура единицы хранения кэша
 type cacheItem struct {
 	recipe    *domain.Recipe
 	expiresAt time.Time
 }
 
-// структура единицы хранения кэша нескольких элементов по тегу
 type tagCacheItem struct {
 	recipes   []*domain.Recipe
 	expiresAt time.Time
 }
 
-// конструктор кэша
 func NewRecipeCache(ttl, cleanupInterval time.Duration, logger logger.Logger) cache.RecipeCacheInterface {
 	cache := &inMemoryCache{
 		recipes:         make(map[string]*cacheItem),

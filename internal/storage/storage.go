@@ -20,49 +20,41 @@ func NewStorage(cfg *config.Config) (*DataBase, error) {
 		cfg.Mongo.Host,
 		cfg.Mongo.Port,
 	)
-	clientOptions := options.Client().ApplyURI(mongoURI)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	mongoClient, err := mongo.Connect(ctx, clientOptions)
+	mongoClient, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
-		return nil, fmt.Errorf("error in NewStorage: %w", err)
+		return nil, fmt.Errorf("NewStorage: %w", err)
 	}
 
 	if err := mongoClient.Ping(ctx, nil); err != nil {
-		return nil, fmt.Errorf("error in NewStorage: %w", err)
+		return nil, fmt.Errorf("NewStorage: %w", err)
 	}
 
-	db := mongoClient.Database(cfg.Mongo.Name)
-
-	Database := DataBase{
-		DB:     db,
+	return &DataBase{
+		DB:     mongoClient.Database(cfg.Mongo.Name),
 		Client: mongoClient,
-	}
-
-	return &Database, nil
+	}, nil
 }
 
 // типа миграция для создания нулевого админа
 func MigrateAdminUser(db *mongo.Database, cfg *config.Config) error {
-	// создаем контекст и выбираем коллекцию
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	usersCollection := db.Collection("users")
 
-	// выбираем записи с ролью админ
 	count, err := usersCollection.CountDocuments(ctx, bson.M{"role": "Admin"})
 	if err != nil {
-		return fmt.Errorf("error in MigrateAdminUser: %w", err)
+		return fmt.Errorf("MigrateAdminUser: %w", err)
 	}
 
-	// если админа нет — создаём
 	if count == 0 {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(cfg.Admin.Password), bcrypt.DefaultCost)
 		if err != nil {
-			return fmt.Errorf("error in MigrateAdminUser: %w", err)
+			return fmt.Errorf("MigrateAdminUser: %w", err)
 		}
 
 		admin := domain.User{
@@ -73,9 +65,8 @@ func MigrateAdminUser(db *mongo.Database, cfg *config.Config) error {
 			CreatedAt: time.Now(),
 		}
 
-		_, err = usersCollection.InsertOne(ctx, admin)
-		if err != nil {
-			return fmt.Errorf("error in MigrateAdminUser: %w", err)
+		if _, err = usersCollection.InsertOne(ctx, admin); err != nil {
+			return fmt.Errorf("MigrateAdminUser: %w", err)
 		}
 	}
 

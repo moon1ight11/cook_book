@@ -2,136 +2,110 @@ package recipes
 
 import (
 	"context"
-	"cook_book/internal/domain"
 	"fmt"
+	"regexp"
+	"time"
+
+	"cook_book/internal/domain"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"regexp"
-	"time"
 )
 
-// создание записи рецепта
 func (r *recipeRepo) Create(ctx context.Context, recipe *domain.Recipe) error {
-	// устанавливаем метку создания
 	recipe.CreatedAt = time.Now()
-	id := primitive.NewObjectID()
-	recipe.Id = id
+	recipe.Id = primitive.NewObjectID()
 
-	// получаем результат из бд
 	result, err := r.collection.InsertOne(ctx, recipe)
 	if err != nil {
-		return fmt.Errorf("error in recipeCreate: %w", err)
+		return fmt.Errorf("recipeCreate: %w", err)
 	}
 
 	recipe.Id = result.InsertedID.(primitive.ObjectID)
 	return nil
 }
 
-// поиск рецепта по id
 func (r *recipeRepo) FindByID(ctx context.Context, id primitive.ObjectID) (*domain.Recipe, error) {
 	var recipe domain.Recipe
 
-	filter := bson.M{"_id": id}
-
-	err := r.collection.FindOne(ctx, filter).Decode(&recipe)
+	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&recipe)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("error in recipeFindById: recipe not found")
+			return nil, fmt.Errorf("recipeFindByID: recipe not found")
 		}
-		return nil, fmt.Errorf("error in recipeFindById: %w", err)
+		return nil, fmt.Errorf("recipeFindByID: %w", err)
 	}
 
 	return &recipe, nil
 }
 
-// получение всех рецептов в сервисе с фильтром
 func (r *recipeRepo) FindAll(ctx context.Context, filter map[string]interface{}, limit, offset int64) ([]*domain.Recipe, int64, error) {
-	// Подбраем фильтр
 	mongoFilter := bson.M{}
 
-	// фильтр по названию
 	if title, ok := filter["title"]; ok {
 		mongoFilter["title"] = bson.M{"$regex": regexp.QuoteMeta(title.(string)), "$options": "i"}
 	}
 
-	// фильтр по сложности
 	if difficulty, ok := filter["difficulty"]; ok {
 		mongoFilter["difficulty"] = bson.M{"$regex": regexp.QuoteMeta(difficulty.(string)), "$options": "i"}
 	}
 
-	// получаем количество найденных рецептов
 	total, err := r.collection.CountDocuments(ctx, mongoFilter)
 	if err != nil {
-		return nil, 0, fmt.Errorf("error in recipeFindAll: %w", err)
+		return nil, 0, fmt.Errorf("recipeFindAll: %w", err)
 	}
 
-	// отображаем с пагинацией
 	findOptions := options.Find().
 		SetLimit(limit).
 		SetSkip(offset).
 		SetSort(bson.M{"created_at": -1})
 
-	// получаем указатель на найденные объекты
 	cursor, err := r.collection.Find(ctx, mongoFilter, findOptions)
 	if err != nil {
-		return nil, 0, fmt.Errorf("error in recipeFindAll: %w", err)
+		return nil, 0, fmt.Errorf("recipeFindAll: %w", err)
 	}
 	defer cursor.Close(ctx)
 
-	// из указателя выгружаем рецепты
 	var recipes []*domain.Recipe
 	if err = cursor.All(ctx, &recipes); err != nil {
-		return nil, 0, fmt.Errorf("error in recipeFindAll: %w", err)
+		return nil, 0, fmt.Errorf("recipeFindAll: %w", err)
 	}
 
 	return recipes, total, nil
 }
 
-// поиск записей по тегам
 func (r *recipeRepo) FindByTags(ctx context.Context, tags []string) ([]*domain.Recipe, error) {
-	// выбираем теги
-	filter := bson.M{"tags": bson.M{"$in": tags}}
-
-	// получаем указатель на рецепты
-	cursor, err := r.collection.Find(ctx, filter)
+	cursor, err := r.collection.Find(ctx, bson.M{"tags": bson.M{"$in": tags}})
 	if err != nil {
-		return nil, fmt.Errorf("error in recipeFindByTags: %w", err)
+		return nil, fmt.Errorf("recipeFindByTags: %w", err)
 	}
 	defer cursor.Close(ctx)
 
-	// выгружаем рецепты из указателя
 	var recipes []*domain.Recipe
 	if err = cursor.All(ctx, &recipes); err != nil {
-		return nil, fmt.Errorf("error in recipeFindByTags: %w", err)
+		return nil, fmt.Errorf("recipeFindByTags: %w", err)
 	}
 
 	return recipes, nil
 }
 
-// получение всех рецептов конкретного пользователя
 func (r *recipeRepo) FindByUser(ctx context.Context, userId primitive.ObjectID) ([]*domain.Recipe, error) {
-	// выбираем фильтр
-	filter := bson.M{"owner_id": userId}
-
-	// получаем указатель на рецепты
-	cursor, err := r.collection.Find(ctx, filter)
+	cursor, err := r.collection.Find(ctx, bson.M{"owner_id": userId})
 	if err != nil {
-		return nil, fmt.Errorf("error in recipeFindByUser: %w", err)
+		return nil, fmt.Errorf("recipeFindByUser: %w", err)
 	}
 	defer cursor.Close(ctx)
 
-	// выгружаем рецепты из указателя
 	var recipes []*domain.Recipe
 	if err = cursor.All(ctx, &recipes); err != nil {
-		return nil, fmt.Errorf("error in recipeFindByUser: %w", err)
+		return nil, fmt.Errorf("recipeFindByUser: %w", err)
 	}
 
 	return recipes, nil
 }
 
-// обновление записи
 func (r *recipeRepo) Update(
 	ctx context.Context,
 	id primitive.ObjectID,
@@ -177,47 +151,31 @@ func (r *recipeRepo) Update(
 	}
 
 	if len(update) == 0 {
-		return fmt.Errorf("error in recipeUpdate: %s", "nothing to update")
+		return fmt.Errorf("recipeUpdate: nothing to update")
 	}
 
 	update["updated_at"] = time.Now()
 
-	filter := bson.M{
-		"_id":      id,
-		"owner_id": userId,
-	}
-
-	result, err := r.collection.UpdateOne(ctx, filter, bson.M{
-		"$set": update,
-	})
+	result, err := r.collection.UpdateOne(ctx, bson.M{"_id": id, "owner_id": userId}, bson.M{"$set": update})
 	if err != nil {
-		return fmt.Errorf("error in recipeUpdate: %w", err)
+		return fmt.Errorf("recipeUpdate: %w", err)
 	}
 
 	if result.MatchedCount == 0 {
-		return fmt.Errorf("error in recipeUpdate: recipe with id=%s not found", id)
+		return fmt.Errorf("recipeUpdate: recipe with id=%s not found", id.Hex())
 	}
 
 	return nil
 }
 
-// удаление записи из бд
 func (r *recipeRepo) Delete(ctx context.Context, id primitive.ObjectID, userId primitive.ObjectID) error {
-	// фильтруем по конкретному id + id пользователя
-	filter := bson.M{
-		"_id":      id,
-		"owner_id": userId,
-	}
-
-	// удаляем запись
-	result, err := r.collection.DeleteOne(ctx, filter)
+	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": id, "owner_id": userId})
 	if err != nil {
-		return fmt.Errorf("error in recipeDelete: %w", err)
+		return fmt.Errorf("recipeDelete: %w", err)
 	}
 
-	// если ничего не удалилось - ошибка
 	if result.DeletedCount == 0 {
-		return fmt.Errorf("errir in recipeDelete: recipe not found")
+		return fmt.Errorf("recipeDelete: recipe not found")
 	}
 
 	return nil

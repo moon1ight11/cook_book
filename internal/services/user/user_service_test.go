@@ -2,13 +2,14 @@ package user
 
 import (
 	"context"
-	"cook_book/internal/api/jwt"
-	"cook_book/internal/domain"
-	"cook_book/internal/services/user/mocks"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"testing"
+
+	"cook_book/internal/api/jwt"
+	"cook_book/internal/domain"
+	"cook_book/internal/services/user/mocks"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -17,7 +18,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// создание тестового юзкейса
 func setupTest() (*userUseCase, *mocks.MockUserRepository, *mocks.MockJWTService) {
 	mockRepo := new(mocks.MockUserRepository)
 	mockJWT := new(mocks.MockJWTService)
@@ -30,7 +30,6 @@ func setupTest() (*userUseCase, *mocks.MockUserRepository, *mocks.MockJWTService
 	return usecase, mockRepo, mockJWT
 }
 
-// создание тестового пользователя
 func createTestUser() *domain.User {
 	return &domain.User{
 		Id:    primitive.NewObjectID(),
@@ -40,7 +39,6 @@ func createTestUser() *domain.User {
 	}
 }
 
-// успешное создание пользователя
 func TestCreateUser_Success(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -52,14 +50,11 @@ func TestCreateUser_Success(t *testing.T) {
 		Role:     domain.RoleBasic,
 	}
 
-	// настраиваем моки
 	mockRepo.On("FindByEmail", ctx, req.Email).Return(nil, errors.New("not found"))
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*domain.User")).Return(nil)
 
-	// выполняем тест
 	user, err := usecase.CreateUser(ctx, req)
 
-	// проверяем
 	assert.NoError(t, err)
 	assert.NotNil(t, user)
 	assert.Equal(t, req.Name, user.Name)
@@ -67,14 +62,12 @@ func TestCreateUser_Success(t *testing.T) {
 	assert.NotEmpty(t, user.HashPass)
 	assert.Equal(t, req.Role, user.Role)
 
-	// хэширован ли пароль
 	err = bcrypt.CompareHashAndPassword([]byte(user.HashPass), []byte(req.Password))
 	assert.NoError(t, err)
 
 	mockRepo.AssertExpectations(t)
 }
 
-// создание пользователя с существующим емайлом
 func TestCreateUser_DuplicateEmail(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -97,16 +90,13 @@ func TestCreateUser_DuplicateEmail(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// успеный логин
 func TestLogin_Success(t *testing.T) {
 	usecase, mockRepo, mockJWT := setupTest()
 	ctx := context.Background()
 
-	// приводим пароль в правильный вид
 	password := "password123"
 	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
-	// настраиваем пользователя
 	user := &domain.User{
 		Id:       primitive.NewObjectID(),
 		Name:     "TestUser3",
@@ -115,28 +105,23 @@ func TestLogin_Success(t *testing.T) {
 		Role:     domain.RoleBasic,
 	}
 
-	// запрос на логин
 	req := &domain.LoginRequest{
 		Email:    "test3@example.com",
 		Password: password,
 	}
 
-	// токены
 	tokens := &jwt.TokenDetails{
 		AccessToken:  "access_token_123",
 		RefreshToken: "refresh_token_123",
 	}
 
-	// настраиваем моки
 	mockRepo.On("FindByEmail", ctx, req.Email).Return(user, nil)
 	mockRepo.On("UpdateRefreshToken", ctx, user.Id, "").Return(nil)
 	mockJWT.On("GenerateTokens", user.Id.Hex(), user.Email, string(user.Role)).Return(tokens, nil)
 	mockRepo.On("UpdateRefreshToken", ctx, user.Id, mock.AnythingOfType("string")).Return(nil)
 
-	// тестируем
 	response, err := usecase.Login(ctx, req)
 
-	// проверяем
 	assert.NoError(t, err)
 	assert.NotNil(t, response)
 	assert.Equal(t, tokens.AccessToken, response.AccessToken)
@@ -147,41 +132,33 @@ func TestLogin_Success(t *testing.T) {
 	mockJWT.AssertExpectations(t)
 }
 
-// логин с неправильным паролем
 func TestLogin_InvalidPassword(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
 
-	// правильный пароль
 	password := "password1"
 	hashedPass, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
-	// делаем пользователя
 	user := &domain.User{
 		Id:       primitive.NewObjectID(),
 		Email:    "test5@example.com",
 		HashPass: string(hashedPass),
 	}
 
-	// запрос на логин с не тем паролем
 	req := &domain.LoginRequest{
 		Email:    "test5@example.com",
 		Password: "password2",
 	}
 
-	// настраиваем моки
 	mockRepo.On("FindByEmail", ctx, req.Email).Return(user, nil)
 
-	// делаем запрос
 	response, err := usecase.Login(ctx, req)
 
-	// проверяем
 	assert.Error(t, err)
 	assert.Nil(t, response)
 	mockRepo.AssertExpectations(t)
 }
 
-// успешное получение пользователя по айди
 func TestGetUserByID_Success(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -199,7 +176,6 @@ func TestGetUserByID_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// получение пользователя по не тому айди
 func TestGetUserByID_InvalidID(t *testing.T) {
 	usecase, _, _ := setupTest()
 	ctx := context.Background()
@@ -210,7 +186,6 @@ func TestGetUserByID_InvalidID(t *testing.T) {
 	assert.Nil(t, user)
 }
 
-// успешное обновление пользователя
 func TestUpdateUser_Success(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -229,7 +204,6 @@ func TestUpdateUser_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// успешное обновление роли пользователя
 func TestUpdateUserRole_Success(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -245,7 +219,6 @@ func TestUpdateUserRole_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// обновление роли с неправильной входной ролью
 func TestUpdateUserRole_InvalidRole(t *testing.T) {
 	usecase, _, _ := setupTest()
 	ctx := context.Background()
@@ -258,7 +231,6 @@ func TestUpdateUserRole_InvalidRole(t *testing.T) {
 	assert.Contains(t, err.Error(), "not valid")
 }
 
-// успешное удаление пользователя
 func TestDeleteUser_Success(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -273,7 +245,6 @@ func TestDeleteUser_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// успешный разлогин пользователя
 func TestSignOut_Success(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -288,7 +259,6 @@ func TestSignOut_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// успешнпая очистка протухших токенов
 func TestCleanExpiredTokens_Success(t *testing.T) {
 	usecase, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -301,7 +271,6 @@ func TestCleanExpiredTokens_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// успешное обновление токенов
 func TestRefreshTokens_Success(t *testing.T) {
 	usecase, mockRepo, mockJWT := setupTest()
 	ctx := context.Background()
@@ -335,7 +304,6 @@ func TestRefreshTokens_Success(t *testing.T) {
 	assert.Equal(t, newTokens.RefreshToken, response.RefreshToken)
 }
 
-// неудачное обновление токенов изза неправильного рефреша
 func TestRefreshTokens_InvalidToken(t *testing.T) {
 	usecase, _, mockJWT := setupTest()
 	ctx := context.Background()

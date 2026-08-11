@@ -3,20 +3,20 @@ server:
   host: "0.0.0.0"
 
 admin:
-  name: "null_admin"
-  email: "admin@gmail.com"
-  password: "123321"
+  name: ""
+  email: ""
+  password: ""
 
 database:
   host: "localhost"
   port: 27017
-  name: "cook_book"
-  user: "admin"
-  password: "123"
+  name: ""
+  user: ""
+  password: ""
 
 jwt:
-  access_secret: "1129qwerty!2911"
-  refresh_secret: "1qaz2wsx3edc"
+  access_secret: ""
+  refresh_secret: ""
   access_expiry: "15m"
   refresh_expiry: "24h"
 

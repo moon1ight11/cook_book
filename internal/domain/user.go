@@ -6,15 +6,15 @@ import (
 )
 
 type User struct {
-	Id                    primitive.ObjectID `bson:"_id,omitempty"`
-	Name                  string             `bson:"name"`
-	Email                 string             `bson:"email"`
-	HashPass              string             `bson:"password"`
-	Role                  Role               `bson:"role"`
-	RefreshToken          string             `bson:"refresh_token"`
-	RefreshTokenExpiresAt *time.Time         `bson:"refresh_token_expires_at"`
-	CreatedAt             time.Time          `bson:"created_at"`
-	UpdatedAt             time.Time          `bson:"updated_at"`
+	Id                    primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name                  string             `bson:"name" json:"name"`
+	Email                 string             `bson:"email" json:"email"`
+	HashPass              string             `bson:"password" json:"-"`
+	Role                  Role               `bson:"role" json:"role"`
+	RefreshToken          string             `bson:"refresh_token" json:"-"`
+	RefreshTokenExpiresAt *time.Time         `bson:"refresh_token_expires_at" json:"-"`
+	CreatedAt             time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt             time.Time          `bson:"updated_at" json:"updated_at"`
 }
 
 // модель для создания пользователя

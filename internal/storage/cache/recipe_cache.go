@@ -4,7 +4,6 @@ import (
 	"cook_book/internal/domain"
 )
 
-// интерфейс для кэша
 type RecipeCacheInterface interface {
 	Get(id string) (*domain.Recipe, bool)
 	Set(id string, recipe *domain.Recipe)
@@ -15,7 +14,6 @@ type RecipeCacheInterface interface {
 	Stop()
 }
 
-// статистика кэша
 type CacheStats struct {
 	TotalItems   int
 	TotalTagSets int

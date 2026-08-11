@@ -6,14 +6,12 @@ import (
 	"cook_book/pkg/logger"
 )
 
-// структура хэндлера
 type RecipeHandler struct {
 	useCase services.RecipeUseCaseInterface
 	logger  logger.Logger
 	metrics metrics.MetricsInterface
 }
 
-// конструктор
 func NewRecipeHandler(
 	useCase services.RecipeUseCaseInterface,
 	logger logger.Logger,

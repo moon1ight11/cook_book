@@ -2,10 +2,11 @@ package jwt
 
 import (
 	"context"
-	"cook_book/internal/services"
-	"cook_book/pkg/logger"
 	"sync"
 	"time"
+
+	"cook_book/internal/services"
+	"cook_book/pkg/logger"
 )
 
 type CleanupService struct {
@@ -22,12 +23,10 @@ func NewCleanupService(userUseCase services.UserUseCaseInterface, logger logger.
 	}
 }
 
-// горутина с очистителем
 func (s *CleanupService) StartCleanup(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	s.cancelFunc = cancel
 
-	// задаем интервал - каждые сутки
 	ticker := time.NewTicker(24 * time.Hour)
 	s.wg.Add(1)
 	go func() {
@@ -35,10 +34,8 @@ func (s *CleanupService) StartCleanup(ctx context.Context) {
 		defer ticker.Stop()
 		for {
 			select {
-			// когда срабатывает тикер - удаляем
 			case <-ticker.C:
 				s.cleanExpiredTokens(ctx)
-			// когда сворачивается контекст - останавливаем таймер и завершаем клинер
 			case <-ctx.Done():
 				s.logger.Info("Cleanup scheduler stopped")
 				return
@@ -47,26 +44,22 @@ func (s *CleanupService) StartCleanup(ctx context.Context) {
 	}()
 }
 
-// сам очистиетель
 func (s *CleanupService) cleanExpiredTokens(ctx context.Context) {
-	// создаем контекст с таймаутом
 	cleanupCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	err := s.userUseCase.CleanExpiredTokens(cleanupCtx)
-	if err != nil {
+	if err := s.userUseCase.CleanExpiredTokens(cleanupCtx); err != nil {
 		s.logger.Error("Failed to clean expired tokens", "error", err)
 		return
 	}
 
-	s.logger.Info("Expired tokens cleanup completed successfully")
+	s.logger.Info("Expired tokens cleaned")
 }
 
-// грейсфул остановка очистителя
 func (s *CleanupService) Stop() {
 	if s.cancelFunc != nil {
 		s.cancelFunc()
 	}
 	s.wg.Wait()
-	s.logger.Info("Cleanup service stopped gracefully")
+	s.logger.Info("Cleanup service stopped")
 }

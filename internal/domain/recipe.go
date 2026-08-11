@@ -33,25 +33,25 @@ type Ingredient struct {
 // валидация рецепта
 func (r *Recipe) RecipeValidate() error {
 	if r.Title == "" {
-		return fmt.Errorf("error in RecipeValidate: empty title")
+		return fmt.Errorf("RecipeValidate: empty title")
 	}
 	if len(r.Ingredients) == 0 {
-		return fmt.Errorf("error in RecipeValidate: no ingredients")
+		return fmt.Errorf("RecipeValidate: no ingredients")
 	}
 	if len(r.Steps) == 0 {
-		return fmt.Errorf("error in RecipeValidate: no steps")
+		return fmt.Errorf("RecipeValidate: no steps")
 	}
 	if r.PrepTime < 0 {
-		return fmt.Errorf("error in RecipeValidate: prep time must be positive")
+		return fmt.Errorf("RecipeValidate: prep time must be positive")
 	}
 	if r.CookTime < 0 {
-		return fmt.Errorf("error in RecipeValidate: cook time must be positive")
+		return fmt.Errorf("RecipeValidate: cook time must be positive")
 	}
 	if r.Servings <= 0 {
-		return fmt.Errorf("error in RecipeValidate: num of servings must be positive")
+		return fmt.Errorf("RecipeValidate: servings must be positive")
 	}
 	if r.Difficulty != "easy" && r.Difficulty != "medium" && r.Difficulty != "hard" {
-		return fmt.Errorf("error in RecipeValidate: wrong difficulty")
+		return fmt.Errorf("RecipeValidate: wrong difficulty")
 	}
 	return nil
 }

@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+
 	"cook_book/internal/api"
 	"cook_book/internal/api/handlers"
 	"cook_book/internal/api/handlers/authhandlers"
@@ -20,8 +23,6 @@ import (
 	"cook_book/internal/storage/repo/recipes"
 	"cook_book/internal/storage/repo/users"
 	"cook_book/pkg/logger"
-	"fmt"
-	"net/http"
 )
 
 type Dependencies struct {
@@ -44,43 +45,36 @@ type Dependencies struct {
 }
 
 func NewDependencies(ctx context.Context) (*Dependencies, error) {
-	// инициализация конфига
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, err
 	}
 
-	// инициализация логгера
-	logger, err := logger.NewLogger(cfg.Logger)
+	log, err := logger.NewLogger(cfg.Logger)
 	if err != nil {
 		return nil, err
 	}
 
-	metrics := metrics.NewMetrics()
+	m := metrics.NewMetrics()
 
-	// соединение с БД
 	db, err := storage.NewStorage(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// применение тн миграций
-	err = storage.MigrateAdminUser(db.DB, cfg)
-	if err != nil {
-		logger.Error("Failed to create migrations", "error", err)
+	if err = storage.MigrateAdminUser(db.DB, cfg); err != nil {
+		log.Error("Failed to run admin migration", "error", err)
 		return nil, err
 	}
 
-	// создание индексов в бд
 	recipesColl := db.DB.Collection("recipes")
 	usersColl := db.DB.Collection("users")
 	indexManager := repo.NewIndexManager(recipesColl, usersColl)
 
 	if err := indexManager.CreateAllIndexes(ctx); err != nil {
-		logger.Warn("Warning: failed to create indexes:", "error", err)
+		log.Warn("Failed to create indexes", "error", err)
 	}
 
-	// инициализация jwt
 	jwtService := jwt.NewJWTService(
 		cfg.JWT.AccessSecret,
 		cfg.JWT.RefreshSecret,
@@ -88,30 +82,23 @@ func NewDependencies(ctx context.Context) (*Dependencies, error) {
 		cfg.JWT.RefreshExpiry,
 	)
 
-	// инициализация кэша
-	recipeCache := inmemcache.NewRecipeCache(cfg.Cache.TTL, cfg.Cache.CleanUpInterval, logger)
+	recipeCache := inmemcache.NewRecipeCache(cfg.Cache.TTL, cfg.Cache.CleanUpInterval, log)
 
-	// инициализация зависимостей
-	recipeRepo := recipes.NewRecipeMongoRepo(db, logger)
-	userRepo := users.NewUserMongoRepo(db, logger)
+	recipeRepo := recipes.NewRecipeMongoRepo(db, log)
+	userRepo := users.NewUserMongoRepo(db, log)
 
 	recipeUseCase := recipe.NewRecipeUseCase(recipeRepo, recipeCache)
 	userUseCase := user.NewUserUseCase(userRepo, jwtService)
 
-	recipeHandler := recipehandlers.NewRecipeHandler(recipeUseCase, logger, metrics)
-	authHandler := authhandlers.NewAuthHandler(userUseCase, logger, jwtService, metrics)
-	userHandler := userhandlers.NewUserHandler(userUseCase, logger, metrics)
+	recipeHandler := recipehandlers.NewRecipeHandler(recipeUseCase, log, m)
+	authHandler := authhandlers.NewAuthHandler(userUseCase, log, jwtService, m)
+	userHandler := userhandlers.NewUserHandler(userUseCase, log, m)
 
-	// инициализируем клинер
-	cleanupService := jwt.NewCleanupService(userUseCase, logger)
+	cleanupService := jwt.NewCleanupService(userUseCase, log)
 
-	// инициализация роутера
 	router := api.NewRouter(recipeHandler, authHandler, userHandler)
+	router.Init(log, jwtService, m)
 
-	// инициализация роутов
-	router.Init(logger, jwtService, metrics)
-
-	// создаем HTTP сервер
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler: router.GetEngine(),
@@ -119,7 +106,7 @@ func NewDependencies(ctx context.Context) (*Dependencies, error) {
 
 	return &Dependencies{
 		Config:         cfg,
-		Logger:         logger,
+		Logger:         log,
 		DB:             db,
 		JWTService:     jwtService,
 		RecipeCache:    recipeCache,
@@ -136,22 +123,18 @@ func NewDependencies(ctx context.Context) (*Dependencies, error) {
 	}, nil
 }
 
-// StartCleanup запускает очистку токенов
 func (c *Dependencies) StartCleanup(ctx context.Context) {
 	c.CleanupService.StartCleanup(ctx)
 }
 
-// StopCleanup останавливает очистку токенов
 func (c *Dependencies) StopCleanup() {
 	c.CleanupService.Stop()
 }
 
-// StopCache останавливает кэш
 func (c *Dependencies) StopCache() {
 	c.RecipeCache.Stop()
 }
 
-// CloseDB закрывает соединение с БД
 func (c *Dependencies) CloseDB(ctx context.Context) error {
 	return c.DB.Close(ctx)
 }

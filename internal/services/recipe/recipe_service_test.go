@@ -2,16 +2,16 @@ package recipe
 
 import (
 	"context"
+	"testing"
+
 	"cook_book/internal/domain"
 	"cook_book/internal/services/recipe/mocks"
-	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// создание тестового юзкейса
 func setupTest() (*recipeUseCase, *mocks.MockRecipeRepository, *mocks.MockRecipeCache) {
 	mockRepo := new(mocks.MockRecipeRepository)
 	mockCache := new(mocks.MockRecipeCache)
@@ -24,7 +24,6 @@ func setupTest() (*recipeUseCase, *mocks.MockRecipeRepository, *mocks.MockRecipe
 	return usecase, mockRepo, mockCache
 }
 
-// создание тестового рецепта
 func createTestRecipe() *domain.Recipe {
 	return &domain.Recipe{
 		Id:          primitive.NewObjectID(),
@@ -43,7 +42,6 @@ func createTestRecipe() *domain.Recipe {
 	}
 }
 
-// создание рецепта
 func TestCreateRecipe_Success(t *testing.T) {
 	uc, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -61,7 +59,6 @@ func TestCreateRecipe_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// создание рецепта с неправильными данными
 func TestCreateRecipe_InvalidRecipe(t *testing.T) {
 	uc, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -77,7 +74,6 @@ func TestCreateRecipe_InvalidRecipe(t *testing.T) {
 	mockRepo.AssertNotCalled(t, "Create")
 }
 
-// обновление рецепта
 func TestUpdateRecipe_Success(t *testing.T) {
 	uc, mockRepo, mockCache := setupTest()
 	ctx := context.Background()
@@ -106,7 +102,6 @@ func TestUpdateRecipe_Success(t *testing.T) {
 	mockCache.AssertExpectations(t)
 }
 
-// обновление с пустым названием
 func TestUpdateRecipe_EmptyTitle(t *testing.T) {
 	uc, _, _ := setupTest()
 	ctx := context.Background()
@@ -120,7 +115,6 @@ func TestUpdateRecipe_EmptyTitle(t *testing.T) {
 	assert.Contains(t, err.Error(), "title is empty")
 }
 
-// удаление рецепта
 func TestDeleteRecipe_Success(t *testing.T) {
 	uc, mockRepo, mockCache := setupTest()
 	ctx := context.Background()
@@ -137,7 +131,6 @@ func TestDeleteRecipe_Success(t *testing.T) {
 	mockCache.AssertExpectations(t)
 }
 
-// удаление рецепта с кривым айди
 func TestDeleteRecipe_InvalidID(t *testing.T) {
 	uc, _, _ := setupTest()
 	ctx := context.Background()
@@ -148,7 +141,6 @@ func TestDeleteRecipe_InvalidID(t *testing.T) {
 	assert.Contains(t, err.Error(), "DeleteRecipe")
 }
 
-// получение рецепта по айди из бд
 func TestGetRecipeByID_CacheMiss_RepoHit(t *testing.T) {
 	uc, mockRepo, mockCache := setupTest()
 	ctx := context.Background()
@@ -167,7 +159,6 @@ func TestGetRecipeByID_CacheMiss_RepoHit(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// получение рецепта по айди с неправильным айди
 func TestGetRecipeByID_InvalidID(t *testing.T) {
 	uc, _, mockCache := setupTest()
 	ctx := context.Background()
@@ -180,7 +171,6 @@ func TestGetRecipeByID_InvalidID(t *testing.T) {
 	assert.Contains(t, err.Error(), "GetRecipeByID")
 }
 
-// получение рецепта юзера
 func TestGetRecipeByUser_Success(t *testing.T) {
 	uc, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -200,7 +190,6 @@ func TestGetRecipeByUser_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// получение рецепта по юзеру с неверным айди
 func TestGetRecipeByUser_InvalidID(t *testing.T) {
 	uc, _, _ := setupTest()
 	ctx := context.Background()
@@ -211,7 +200,6 @@ func TestGetRecipeByUser_InvalidID(t *testing.T) {
 	assert.Contains(t, err.Error(), "GetRecipeByUser")
 }
 
-// получение списка всех рецептов
 func TestListRecipes_Success(t *testing.T) {
 	uc, mockRepo, _ := setupTest()
 	ctx := context.Background()
@@ -234,7 +222,6 @@ func TestListRecipes_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// получение рецептов по тегам
 func TestSearchByTags_Success(t *testing.T) {
 	uc, mockRepo, mockCache := setupTest()
 	ctx := context.Background()
@@ -258,7 +245,6 @@ func TestSearchByTags_Success(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-// получение рецептов по тегам без тегов
 func TestSearchByTags_NoTags(t *testing.T) {
 	uc, _, _ := setupTest()
 	ctx := context.Background()
