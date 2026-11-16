@@ -1,0 +1,30 @@
+@import 'tailwindcss';
+
+@theme {
+  /* фоны */
+  --color-cream: #fbf7ef;
+  --color-parchment: #f3ead7;
+
+  /* текст: основной почти чёрный, вторичный — коричневый */
+  --color-ink: #2a211b;
+  --color-warm-brown: #5c4033;
+
+  /* акценты */
+  --color-terracotta: #b8502f;
+  --color-sage: #5f7d57;
+
+  /* шрифты подключаются в layout.tsx через next/font,
+     здесь — только fallback-переменные */
+--font-heading: var(--font-heading), Georgia, serif;
+--font-body: var(--font-body), system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+}

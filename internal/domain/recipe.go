@@ -25,9 +25,9 @@ type Recipe struct {
 
 // структура ингредиентов
 type Ingredient struct {
-	Name     string `bson:"name"`
-	Quantity string `bson:"quantity"`
-	Unit     string `bson:"unit"`
+	Name     string `bson:"name" json:"name"`
+	Quantity string `bson:"quantity" json:"quantity"`
+	Unit     string `bson:"unit" json:"unit"`
 }
 
 // валидация рецепта
