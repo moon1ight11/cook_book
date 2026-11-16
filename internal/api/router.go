@@ -39,7 +39,7 @@ func (r *Router) Init(logger logger.Logger, jwtService jwt.JWTInterface, metrics
 	r.engine.Use(middleware.CORSWithConfig(
 		middleware.CORSConfig{
 			AllowOrigins:     []string{"http://localhost:3000"},
-			AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.DELETE},
+			AllowMethods:     []string{echo.GET, echo.POST, echo.PUT, echo.PATCH, echo.DELETE},
 			AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept, echo.HeaderAuthorization},
 			AllowCredentials: true,
 		},
