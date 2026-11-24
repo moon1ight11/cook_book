@@ -28,6 +28,7 @@ type AdminConfig struct {
 
 // конфигурация бд
 type MongoConfig struct {
+	URI      string `mapstructure:"uri"`
 	User     string `mapstructure:"user"`
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`

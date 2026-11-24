@@ -14,12 +14,15 @@ import (
 )
 
 func NewStorage(cfg *config.Config) (*DataBase, error) {
-	mongoURI := fmt.Sprintf("mongodb://%s:%s@%s:%d/?authSource=admin",
-		cfg.Mongo.User,
-		cfg.Mongo.Password,
-		cfg.Mongo.Host,
-		cfg.Mongo.Port,
-	)
+	mongoURI := cfg.Mongo.URI
+	if mongoURI == "" {
+		mongoURI = fmt.Sprintf("mongodb://%s:%s@%s:%d/?authSource=admin",
+			cfg.Mongo.User,
+			cfg.Mongo.Password,
+			cfg.Mongo.Host,
+			cfg.Mongo.Port,
+		)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()

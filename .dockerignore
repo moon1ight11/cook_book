@@ -1,12 +1,16 @@
+frontend/
+
 logs/
 *.log
 
 config.yaml
 example.config.yaml
+config.example.yaml
+.env
 
 docker-compose*.yml
 
-.git
+.git/
 .gitignore
 .github/
 

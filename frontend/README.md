@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CookBook Frontend
 
-## Getting Started
+Веб-клиент CookBook — приложение на Next.js (App Router) для работы с рецептами: каталог, поиск по тегам, создание и редактирование рецептов, профиль и админ-панель.
 
-First, run the development server:
+## Требования
+
+- Node.js 20.9+ и npm
+- Запущенный бэкенд на `http://localhost:8080` (см. корневой [Readme.md](../Readme.md))
+
+## Запуск
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Приложение будет доступно на http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Скрипты:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` — запуск в режиме разработки;
+- `npm run build` — production-сборка;
+- `npm run start` — запуск собранного приложения;
+- `npm run lint` — проверка ESLint.
 
-## Learn More
+## Взаимодействие с API
 
-To learn more about Next.js, take a look at the following resources:
+- Базовый URL API задан в [`lib/api.ts`](./lib/api.ts) — `http://localhost:8080/api/v1`.
+- Запросы отправляются с `withCredentials: true`: access-токен хранится в HttpOnly cookie, refresh-токен — в `localStorage`.
+- При ответе `401` axios-интерцептор обновляет access-токен через `/auth/token-refresh` и повторяет запрос; при неудаче перенаправляет на `/login`.
+- Бэкенд разрешает CORS только для `http://localhost:3000`.
+- После смены email или пароля требуется повторный вход.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Структура
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [`app/`](./app) — страницы и маршруты (каталог, поиск, рецепты, профиль, админка);
+- [`components/`](./components) — UI-компоненты и layout;
+- [`features/`](./features) — API-клиенты, хуки и формы по доменным областям (`auth`, `recipes`, `profile`, `admin`);
+- [`lib/`](./lib) — axios-клиент, Zustand-store, утилиты;
+- [`types/`](./types) — TypeScript-типы API.
 
-## Deploy on Vercel
+## Страницы
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Маршрут | Назначение |
+|---|---|
+| `/` | Каталог рецептов с фильтрами и пагинацией |
+| `/search` | Поиск по тегам |
+| `/recipes/[id]` | Детальная страница рецепта |
+| `/recipes/new` | Создание рецепта (нужна авторизация) |
+| `/recipes/[id]/edit` | Редактирование своего рецепта |
+| `/my-recipes` | Рецепты текущего пользователя |
+| `/users/[id]` | Рецепты выбранного автора |
+| `/profile` | Профиль и удаление аккаунта |
+| `/login`, `/register` | Вход и регистрация |
+| `/admin` | Админ-панель (только для роли `Admin`) |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Ограничения
+
+- Отдельного эндпоинта со списком пользователей нет, поэтому в админ-панели операции выполняются по ID, который нужно ввести вручную.
+- Страница `/users/[id]` показывает только публичные рецепты автора, без данных профиля.
+

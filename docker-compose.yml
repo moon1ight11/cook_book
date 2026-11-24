@@ -1,64 +1,127 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: ./df/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      COOKBOOK_ENVIRONMENT: "production"
+      COOKBOOK_SERVER_HOST: "0.0.0.0"
+      COOKBOOK_SERVER_PORT: "8080"
+      COOKBOOK_DATABASE_HOST: mongodb
+      COOKBOOK_DATABASE_PORT: "27017"
+      COOKBOOK_DATABASE_NAME: ${MONGO_DB_NAME:-cook_book}
+      COOKBOOK_DATABASE_USER: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      COOKBOOK_DATABASE_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      COOKBOOK_ADMIN_NAME: ${COOKBOOK_ADMIN_NAME:-admin}
+      COOKBOOK_ADMIN_EMAIL: ${COOKBOOK_ADMIN_EMAIL:?COOKBOOK_ADMIN_EMAIL is required}
+      COOKBOOK_ADMIN_PASSWORD: ${COOKBOOK_ADMIN_PASSWORD:?COOKBOOK_ADMIN_PASSWORD is required}
+      COOKBOOK_JWT_ACCESS_SECRET: ${COOKBOOK_JWT_ACCESS_SECRET:?COOKBOOK_JWT_ACCESS_SECRET is required}
+      COOKBOOK_JWT_REFRESH_SECRET: ${COOKBOOK_JWT_REFRESH_SECRET:?COOKBOOK_JWT_REFRESH_SECRET is required}
+      COOKBOOK_JWT_ACCESS_EXPIRY: ${COOKBOOK_JWT_ACCESS_EXPIRY:-15m}
+      COOKBOOK_JWT_REFRESH_EXPIRY: ${COOKBOOK_JWT_REFRESH_EXPIRY:-24h}
+      COOKBOOK_LOGGER_LEVEL: ${COOKBOOK_LOGGER_LEVEL:-info}
+      COOKBOOK_LOGGER_FILEPATH: "/app/logs/app.log"
+      COOKBOOK_LOGGER_MAXSIZE: "10"
+      COOKBOOK_CACHE_TTL: "5m"
+      COOKBOOK_CACHE_CLEANUPINTERVAL: "1m"
+    volumes:
+      - api_logs:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ./df/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      INTERNAL_API_URL: http://api:8080
+    depends_on:
+      - api
+    networks:
+      - app-network
+
   mongodb:
     image: mongo:7.0
-    restart: always
-    ports:
-      - "27017:27017"
+    restart: unless-stopped
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: 123
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
 
   mongo-express:
     image: mongo-express:1.0.2
-    restart: always
+    profiles: ["tools"]
+    restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: 123
-      ME_CONFIG_MONGODB_URL: mongodb://admin:123@mongodb:27017/
-      ME_CONFIG_BASICAUTH: "false"
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_ROOT_USER}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:?MONGO_EXPRESS_PASSWORD is required}
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+    networks:
+      - app-network
 
   prometheus:
     image: prom/prometheus:latest
+    restart: unless-stopped
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
-      - monitoring
+      - app-network
 
   grafana:
     image: grafana/grafana:latest
+    restart: unless-stopped
     ports:
-      - "3002:3000"
+      - "127.0.0.1:3002:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_INSTALL_PLUGINS=
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
     volumes:
       - grafana-data:/var/lib/grafana
-    networks:
-      - monitoring
     depends_on:
       - prometheus
+    networks:
+      - app-network
 
 networks:
-  monitoring:
+  app-network:
     driver: bridge
 
 volumes:
+  api_logs:
   prometheus-data:
   grafana-data:
   mongo_data:
