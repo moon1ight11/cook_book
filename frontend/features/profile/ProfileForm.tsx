@@ -12,7 +12,6 @@ import { useAuthStore } from '@/lib/store';
 import { toast } from '@/lib/toast';
 import type { User } from '@/types/api';
 
-// все поля опциональны; пустые не отправляем
 const schema = z
     .object({
         name: z.string().optional(),
@@ -65,7 +64,6 @@ export function ProfileForm({ user }: { user: User }) {
         update.mutate(payload, {
             onSuccess: () => {
                 if (changesCredentials) {
-                    // бэк перевыпускает refresh, но не возвращает его фронту → старый мёртв
                     toast.info('Данные входа изменены. Войдите заново.');
                     logoutLocal();
                     router.replace('/login');

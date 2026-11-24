@@ -19,7 +19,6 @@ export function RecipeFilters({
 }) {
     const [title, setTitle] = useState(value.title);
 
-    // debounce поиска по title — бэк ищет regex-подстрокой
     useEffect(() => {
         const t = setTimeout(() => {
             if (title !== value.title) onChange({ ...value, title });

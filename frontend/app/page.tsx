@@ -45,7 +45,6 @@ export default function HomePage() {
     setPage(1);
   };
 
-  // мигаем только при смене фильтров/страницы, не при фоновом refetch
   const dim = isFetching && !isLoading;
 
   return (

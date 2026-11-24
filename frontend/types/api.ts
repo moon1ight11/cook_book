@@ -56,8 +56,6 @@ export interface RefreshTokenResponse {
   refresh_token: string;
 }
 
-// --- запросы ---
-
 export interface SignUpRequest {
   name: string;
   email: string;

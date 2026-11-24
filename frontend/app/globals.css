@@ -13,8 +13,6 @@
   --color-terracotta: #b8502f;
   --color-sage: #5f7d57;
 
-  /* шрифты подключаются в layout.tsx через next/font,
-     здесь — только fallback-переменные */
 --font-heading: var(--font-heading), Georgia, serif;
 --font-body: var(--font-body), system-ui, sans-serif;
 }

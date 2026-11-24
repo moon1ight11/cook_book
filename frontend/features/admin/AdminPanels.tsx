@@ -18,8 +18,6 @@ import {
 import { useAuthStore } from '@/lib/store';
 import type { Role } from '@/types/api';
 
-// ---------- создать админа ----------
-
 const createAdminSchema = z.object({
     name: z.string().min(1, 'Введите имя'),
     email: z.string().email('Некорректный email'),
@@ -60,8 +58,6 @@ function CreateAdminPanel() {
         </Card>
     );
 }
-
-// ---------- сменить роль ----------
 
 const roleSchema = z.object({
     userId: z.string().min(1, 'Введите user_id'),
@@ -110,8 +106,6 @@ function UpdateRolePanel() {
     );
 }
 
-// ---------- удалить пользователя ----------
-
 function DeleteUserPanel() {
     const [open, setOpen] = useState(false);
     const del = useDeleteAnyUser();
@@ -154,8 +148,6 @@ function DeleteUserPanel() {
         </Card>
     );
 }
-
-// ---------- удалить рецепт ----------
 
 function DeleteRecipePanel() {
     const [open, setOpen] = useState(false);

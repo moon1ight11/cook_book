@@ -28,8 +28,8 @@ export function useRecipe(id: string | undefined) {
     return useQuery({
         queryKey: qk.recipe(id ?? ''),
         queryFn: () => recipesApi.getRecipe(id as string),
-        enabled: !!id,
-        retry: false, // 500 на несуществующий id — не ретраим
+        enabled: !!id, 
+        retry: false, 
     });
 }
 
